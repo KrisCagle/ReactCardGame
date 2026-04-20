@@ -1,0 +1,928 @@
+import { useMemo, useState } from 'react'
+import './App.css'
+
+const cardLibrary = {
+  strike: {
+    id: 'strike',
+    name: 'Strike',
+    type: 'Attack',
+    cost: 1,
+    damage: 6,
+    text: 'Deal 6 damage.',
+  },
+  guard: {
+    id: 'guard',
+    name: 'Guard',
+    type: 'Skill',
+    cost: 1,
+    block: 5,
+    text: 'Gain 5 block.',
+  },
+  bash: {
+    id: 'bash',
+    name: 'Bash',
+    type: 'Attack',
+    cost: 2,
+    damage: 9,
+    vulnerable: 1,
+    text: 'Deal 9 damage. Apply 1 vulnerable.',
+  },
+  focus: {
+    id: 'focus',
+    name: 'Focus',
+    type: 'Power',
+    cost: 0,
+    draw: 1,
+    energy: 1,
+    text: 'Gain 1 energy. Draw 1 card.',
+  },
+  cleave: {
+    id: 'cleave',
+    name: 'Cleave',
+    type: 'Attack',
+    cost: 1,
+    damage: 8,
+    text: 'Deal 8 damage.',
+  },
+  shrug: {
+    id: 'shrug',
+    name: 'Shrug It Off',
+    type: 'Skill',
+    cost: 1,
+    block: 8,
+    draw: 1,
+    text: 'Gain 8 block. Draw 1 card.',
+  },
+  pommel: {
+    id: 'pommel',
+    name: 'Pommel Strike',
+    type: 'Attack',
+    cost: 1,
+    damage: 7,
+    draw: 1,
+    text: 'Deal 7 damage. Draw 1 card.',
+  },
+  charge: {
+    id: 'charge',
+    name: 'Battle Trance',
+    type: 'Skill',
+    cost: 0,
+    draw: 2,
+    text: 'Draw 2 cards.',
+  },
+  ironWave: {
+    id: 'iron-wave',
+    name: 'Iron Wave',
+    type: 'Attack',
+    cost: 1,
+    damage: 5,
+    block: 5,
+    text: 'Deal 5 damage. Gain 5 block.',
+  },
+}
+
+const starterDeck = [
+  cardLibrary.strike,
+  cardLibrary.strike,
+  cardLibrary.strike,
+  cardLibrary.guard,
+  cardLibrary.guard,
+  cardLibrary.bash,
+  cardLibrary.focus,
+]
+
+const rewardPool = [
+  cardLibrary.cleave,
+  cardLibrary.shrug,
+  cardLibrary.pommel,
+  cardLibrary.charge,
+  cardLibrary.ironWave,
+  cardLibrary.guard,
+  cardLibrary.strike,
+]
+
+const relicLibrary = [
+  {
+    id: 'burning-blood',
+    name: 'Burning Blood',
+    text: 'Heal 6 HP after elite and boss fights.',
+  },
+  {
+    id: 'vajra',
+    name: 'Vajra',
+    text: 'Start each combat with 1 strength.',
+    strength: 1,
+  },
+  {
+    id: 'anchor',
+    name: 'Anchor',
+    text: 'Start each combat with 8 block.',
+    block: 8,
+  },
+  {
+    id: 'lantern',
+    name: 'Lantern',
+    text: 'Start each combat with 1 extra energy.',
+    energy: 1,
+  },
+]
+
+const enemies = {
+  fight: [
+    {
+      name: 'Jaw Worm',
+      maxHp: 42,
+      moves: [
+        { intent: 'Chomp', damage: 8 },
+        { intent: 'Thrash', damage: 5, block: 6 },
+        { intent: 'Bellow', strength: 2, block: 4 },
+      ],
+    },
+    {
+      name: 'Cultist',
+      maxHp: 36,
+      moves: [
+        { intent: 'Incantation', strength: 3 },
+        { intent: 'Dark Strike', damage: 6 },
+        { intent: 'Dark Strike', damage: 6 },
+      ],
+    },
+  ],
+  elite: [
+    {
+      name: 'Gremlin Nob',
+      maxHp: 58,
+      moves: [
+        { intent: 'Bellow', strength: 3 },
+        { intent: 'Skull Bash', damage: 12 },
+        { intent: 'Heavy Slash', damage: 16 },
+      ],
+    },
+  ],
+  boss: [
+    {
+      name: 'Hexaghost',
+      maxHp: 82,
+      moves: [
+        { intent: 'Divider', damage: 6 },
+        { intent: 'Sear', damage: 7 },
+        { intent: 'Inflame', strength: 2, block: 8 },
+        { intent: 'Inferno', damage: 14 },
+      ],
+    },
+  ],
+}
+
+const mapRows = [
+  [
+    { id: 'r0-a', type: 'mystery', label: 'Unknown', x: 12, connections: ['r1-a'] },
+    { id: 'r0-b', type: 'fight', label: 'Ambush', x: 28, connections: ['r1-a', 'r1-b'] },
+    { id: 'r0-c', type: 'fight', label: 'Lookout', x: 50, connections: ['r1-b', 'r1-c'] },
+    { id: 'r0-d', type: 'fight', label: 'Broken Gate', x: 70, connections: ['r1-c', 'r1-d'] },
+    { id: 'r0-e', type: 'shop', label: 'Merchant', x: 88, connections: ['r1-d'] },
+  ],
+  [
+    { id: 'r1-a', type: 'fight', label: 'Ash Hall', x: 22, connections: ['r2-a', 'r2-b'] },
+    { id: 'r1-b', type: 'mystery', label: 'Unknown', x: 42, connections: ['r2-b'] },
+    { id: 'r1-c', type: 'shop', label: 'Merchant', x: 62, connections: ['r2-b', 'r2-c'] },
+    { id: 'r1-d', type: 'fight', label: 'Old Bridge', x: 82, connections: ['r2-c'] },
+  ],
+  [
+    { id: 'r2-a', type: 'fight', label: 'Low Shrine', x: 18, connections: ['r3-a'] },
+    { id: 'r2-b', type: 'elite', label: 'Marked Den', x: 48, connections: ['r3-a', 'r3-b'] },
+    { id: 'r2-c', type: 'mystery', label: 'Unknown', x: 78, connections: ['r3-b'] },
+  ],
+  [
+    { id: 'r3-a', type: 'rest', label: 'Campfire', x: 32, connections: ['r4-a', 'r4-b'] },
+    { id: 'r3-b', type: 'fight', label: 'Red Steps', x: 68, connections: ['r4-b', 'r4-c'] },
+  ],
+  [
+    { id: 'r4-a', type: 'mystery', label: 'Unknown', x: 22, connections: ['r5-a'] },
+    { id: 'r4-b', type: 'fight', label: 'Torch Hall', x: 50, connections: ['r5-a', 'r5-b'] },
+    { id: 'r4-c', type: 'elite', label: 'Red Banner', x: 78, connections: ['r5-b'] },
+  ],
+  [
+    { id: 'r5-a', type: 'shop', label: 'Merchant', x: 36, connections: ['r6-a'] },
+    { id: 'r5-b', type: 'rest', label: 'Campfire', x: 64, connections: ['r6-a', 'r6-b'] },
+  ],
+  [
+    { id: 'r6-a', type: 'fight', label: 'High Road', x: 42, connections: ['r7-a'] },
+    { id: 'r6-b', type: 'mystery', label: 'Unknown', x: 72, connections: ['r7-a'] },
+  ],
+  [{ id: 'r7-a', type: 'boss', label: 'Hexaghost', x: 54, connections: [] }],
+]
+
+const nodeIcons = {
+  fight: 'x',
+  mystery: '?',
+  shop: '$',
+  elite: '!',
+  rest: '+',
+  boss: 'B',
+}
+
+const cloneCard = (card, suffix) => ({
+  ...card,
+  instanceId: `${card.id}-${suffix}`,
+})
+
+const createDeckCard = (card, suffix) => ({
+  ...card,
+  deckId: `${card.id}-${suffix}`,
+})
+
+const shuffle = (cards) => {
+  const shuffled = [...cards]
+
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+
+  return shuffled
+}
+
+const takeRandom = (items, amount) => shuffle(items).slice(0, amount)
+
+const findNode = (nodeId) => mapRows.flat().find((node) => node.id === nodeId)
+
+const createEnemy = (nodeType) => {
+  const candidates = enemies[nodeType] ?? enemies.fight
+  const enemy = candidates[Math.floor(Math.random() * candidates.length)]
+
+  return {
+    ...enemy,
+    hp: enemy.maxHp,
+    block: 0,
+    strength: 0,
+    vulnerable: 0,
+    moveIndex: 0,
+  }
+}
+
+const createRun = () => ({
+  screen: 'map',
+  deck: starterDeck.map((card, index) => createDeckCard(card, `starter-${index}`)),
+  relics: [],
+  player: {
+    maxHp: 70,
+    hp: 70,
+  },
+  currentNodeId: null,
+  completedNodeIds: [],
+  selectedPath: [],
+  rewardChoices: [],
+  rewardKind: 'card',
+  rewardTitle: 'Choose a Card',
+  message: 'Choose your first room.',
+})
+
+const createCombat = (run, node) => {
+  const deck = shuffle(run.deck.map((card, index) => cloneCard(card, `${node.id}-${index}`)))
+  const hand = deck.slice(0, 5)
+
+  return {
+    node,
+    player: {
+      maxHp: run.player.maxHp,
+      hp: run.player.hp,
+      block: run.relics.reduce((total, relic) => total + (relic.block ?? 0), 0),
+      energy: 3 + run.relics.reduce((total, relic) => total + (relic.energy ?? 0), 0),
+      maxEnergy: 3,
+      strength: run.relics.reduce((total, relic) => total + (relic.strength ?? 0), 0),
+    },
+    enemy: createEnemy(node.type),
+    drawPile: deck.slice(5),
+    hand,
+    discardPile: [],
+    turn: 1,
+    log: [`${node.label} blocks the path.`],
+    outcome: 'playing',
+  }
+}
+
+const describeIntent = (move, strength = 0) => {
+  const parts = []
+
+  if (move.damage) {
+    parts.push(`${move.damage + strength} damage`)
+  }
+
+  if (move.block) {
+    parts.push(`${move.block} block`)
+  }
+
+  if (move.strength) {
+    parts.push(`+${move.strength} strength`)
+  }
+
+  return parts.join(', ')
+}
+
+const drawCards = (state, amount) => {
+  let drawPile = [...state.drawPile]
+  let discardPile = [...state.discardPile]
+  const drawn = []
+
+  for (let i = 0; i < amount; i += 1) {
+    if (drawPile.length === 0 && discardPile.length > 0) {
+      drawPile = shuffle(discardPile)
+      discardPile = []
+    }
+
+    if (drawPile.length === 0) {
+      break
+    }
+
+    drawn.push(drawPile[0])
+    drawPile = drawPile.slice(1)
+  }
+
+  return {
+    ...state,
+    drawPile,
+    discardPile,
+    hand: [...state.hand, ...drawn].slice(0, 10),
+  }
+}
+
+const getAvailableNodeIds = (run) => {
+  if (!run.currentNodeId) {
+    return mapRows[0].map((node) => node.id)
+  }
+
+  const node = findNode(run.currentNodeId)
+  return node?.connections ?? []
+}
+
+function App() {
+  const [run, setRun] = useState(createRun)
+  const [combat, setCombat] = useState(null)
+
+  const enemyMove = useMemo(() => {
+    if (!combat) {
+      return null
+    }
+
+    return combat.enemy.moves[combat.enemy.moveIndex % combat.enemy.moves.length]
+  }, [combat])
+
+  const startNode = (node) => {
+    if (node.type === 'rest') {
+      const healed = Math.min(run.player.maxHp, run.player.hp + 18)
+      setRun((current) => ({
+        ...current,
+        currentNodeId: node.id,
+        completedNodeIds: [...current.completedNodeIds, node.id],
+        selectedPath: [...current.selectedPath, node.id],
+        player: {
+          ...current.player,
+          hp: healed,
+        },
+        message: `You rest at ${node.label} and recover ${healed - current.player.hp} HP.`,
+      }))
+      return
+    }
+
+    if (node.type === 'shop') {
+      setRun((current) => ({
+        ...current,
+        screen: 'reward',
+        currentNodeId: node.id,
+        completedNodeIds: [...current.completedNodeIds, node.id],
+        selectedPath: [...current.selectedPath, node.id],
+        rewardChoices: takeRandom(rewardPool, 3),
+        rewardKind: 'shop',
+        rewardTitle: 'Merchant Wares',
+        message: 'Take one card from the merchant while gold is still imaginary.',
+      }))
+      return
+    }
+
+    if (node.type === 'mystery') {
+      resolveMystery(node)
+      return
+    }
+
+    setCombat(createCombat(run, node))
+    setRun((current) => ({
+      ...current,
+      screen: 'combat',
+      currentNodeId: node.id,
+      selectedPath: [...current.selectedPath, node.id],
+      message: `${node.label}: survive the fight.`,
+    }))
+  }
+
+  const resolveMystery = (node) => {
+    const roll = Math.random()
+
+    if (roll < 0.45) {
+      setCombat(createCombat(run, { ...node, type: 'fight', label: 'Hidden Enemy' }))
+      setRun((current) => ({
+        ...current,
+        screen: 'combat',
+        currentNodeId: node.id,
+        selectedPath: [...current.selectedPath, node.id],
+        message: 'Something leaps from the dark.',
+      }))
+      return
+    }
+
+    if (roll < 0.75) {
+      setRun((current) => ({
+        ...current,
+        screen: 'reward',
+        currentNodeId: node.id,
+        completedNodeIds: [...current.completedNodeIds, node.id],
+        selectedPath: [...current.selectedPath, node.id],
+        rewardChoices: takeRandom(rewardPool, 3),
+        rewardKind: 'card',
+        rewardTitle: 'Forgotten Cache',
+        message: 'A hidden cache offers a card.',
+      }))
+      return
+    }
+
+    setRun((current) => ({
+      ...current,
+      screen: 'reward',
+      currentNodeId: node.id,
+      completedNodeIds: [...current.completedNodeIds, node.id],
+      selectedPath: [...current.selectedPath, node.id],
+      rewardChoices: takeRandom(relicLibrary, 3),
+      rewardKind: 'relic',
+      rewardTitle: 'Strange Relic',
+      message: 'A strange power waits in the dust.',
+    }))
+  }
+
+  const playCard = (card) => {
+    if (!combat || combat.outcome !== 'playing') {
+      return
+    }
+
+    if (card.cost > combat.player.energy) {
+      setCombat((current) => ({
+        ...current,
+        log: [`Not enough energy for ${card.name}.`, ...current.log].slice(0, 5),
+      }))
+      return
+    }
+
+    let next = {
+      ...combat,
+      player: {
+        ...combat.player,
+        energy: combat.player.energy - card.cost + (card.energy ?? 0),
+      },
+      enemy: { ...combat.enemy },
+      hand: combat.hand.filter((item) => item.instanceId !== card.instanceId),
+      discardPile: [...combat.discardPile, card],
+    }
+
+    const messages = []
+
+    if (card.damage) {
+      const bonus = combat.enemy.vulnerable ? 3 : 0
+      const damage = card.damage + bonus + combat.player.strength
+      const blockedDamage = Math.max(0, damage - next.enemy.block)
+      next.enemy.block = Math.max(0, next.enemy.block - damage)
+      next.enemy.hp = Math.max(0, next.enemy.hp - blockedDamage)
+      messages.push(`${card.name} hits for ${blockedDamage}.`)
+    }
+
+    if (card.block) {
+      next.player.block += card.block
+      messages.push(`${card.name} adds ${card.block} block.`)
+    }
+
+    if (card.vulnerable) {
+      next.enemy.vulnerable = (next.enemy.vulnerable ?? 0) + card.vulnerable
+      messages.push(`${card.name} exposes the enemy.`)
+    }
+
+    if (card.draw) {
+      next = drawCards(next, card.draw)
+      messages.push(`${card.name} draws ${card.draw}.`)
+    }
+
+    if (next.enemy.hp <= 0) {
+      const isEliteOrBoss = ['elite', 'boss'].includes(next.node.type)
+      const burningBlood = run.relics.some((relic) => relic.id === 'burning-blood')
+      const healedHp = burningBlood && isEliteOrBoss ? Math.min(run.player.maxHp, next.player.hp + 6) : next.player.hp
+
+      setRun((current) => ({
+        ...current,
+        screen: isEliteOrBoss ? 'reward' : 'reward',
+        player: {
+          ...current.player,
+          hp: healedHp,
+        },
+        completedNodeIds: [...current.completedNodeIds, next.node.id],
+        rewardChoices: isEliteOrBoss ? takeRandom(relicLibrary, 3) : takeRandom(rewardPool, 3),
+        rewardKind: isEliteOrBoss ? 'relic' : 'card',
+        rewardTitle: isEliteOrBoss ? 'Claim a Relic' : 'Choose a Card',
+        message: isEliteOrBoss ? 'The elite drops a relic.' : 'Choose one card for your deck.',
+      }))
+      setCombat(null)
+      return
+    }
+
+    setCombat({
+      ...next,
+      log: [...messages, ...next.log].slice(0, 6),
+    })
+  }
+
+  const endTurn = () => {
+    if (!combat || combat.outcome !== 'playing') {
+      return
+    }
+
+    setCombat((current) => {
+      const move = current.enemy.moves[current.enemy.moveIndex % current.enemy.moves.length]
+      let player = { ...current.player, block: 0 }
+      let enemy = {
+        ...current.enemy,
+        block: 0,
+        vulnerable: Math.max(0, (current.enemy.vulnerable ?? 0) - 1),
+      }
+      const messages = []
+
+      if (move.block) {
+        enemy.block += move.block
+        messages.push(`${enemy.name} gains ${move.block} block.`)
+      }
+
+      if (move.strength) {
+        enemy.strength += move.strength
+        messages.push(`${enemy.name} grows stronger.`)
+      }
+
+      if (move.damage) {
+        const damage = move.damage + enemy.strength
+        const unblocked = Math.max(0, damage - current.player.block)
+        player.hp = Math.max(0, current.player.hp - unblocked)
+        messages.push(`${enemy.name} uses ${move.intent} for ${unblocked}.`)
+      }
+
+      enemy.moveIndex += 1
+
+      const beforeDraw = {
+        ...current,
+        player: {
+          ...player,
+          energy: player.maxEnergy,
+        },
+        enemy,
+        discardPile: [...current.discardPile, ...current.hand],
+        hand: [],
+        turn: current.turn + 1,
+      }
+
+      const next = drawCards(beforeDraw, 5)
+
+      if (next.player.hp <= 0) {
+        next.outcome = 'lost'
+        messages.unshift('You fall, but the next climb begins here.')
+      }
+
+      return {
+        ...next,
+        log: [`Turn ${next.turn} begins.`, ...messages, ...current.log].slice(0, 6),
+      }
+    })
+  }
+
+  const chooseReward = (card) => {
+    if (run.rewardKind === 'relic') {
+      setRun((current) => ({
+        ...current,
+        screen: 'map',
+        relics: [...current.relics, card],
+        rewardChoices: [],
+        rewardKind: 'card',
+        rewardTitle: 'Choose a Card',
+        message: `${card.name} claimed. Choose your next room.`,
+      }))
+      return
+    }
+
+    setRun((current) => ({
+      ...current,
+      screen: 'map',
+      deck: [...current.deck, createDeckCard(card, `reward-${current.deck.length}`)],
+      rewardChoices: [],
+      rewardKind: 'card',
+      rewardTitle: 'Choose a Card',
+      message: `${card.name} added. Choose your next room.`,
+    }))
+  }
+
+  const skipReward = () => {
+    setRun((current) => ({
+      ...current,
+      screen: 'map',
+      rewardChoices: [],
+      rewardKind: 'card',
+      rewardTitle: 'Choose a Card',
+      message: 'No card added. Choose your next room.',
+    }))
+  }
+
+  const restartRun = () => {
+    setCombat(null)
+    setRun(createRun())
+  }
+
+  if (run.screen === 'map') {
+    return <MapScreen run={run} onPickNode={startNode} onRestart={restartRun} />
+  }
+
+  if (run.screen === 'reward') {
+    return <RewardScreen run={run} onChoose={chooseReward} onSkip={skipReward} />
+  }
+
+  return (
+    <CombatScreen
+      combat={combat}
+      enemyMove={enemyMove}
+      onEndTurn={endTurn}
+      onPlayCard={playCard}
+      onRestart={restartRun}
+    />
+  )
+}
+
+function MapScreen({ run, onPickNode, onRestart }) {
+  const availableNodeIds = getAvailableNodeIds(run)
+
+  return (
+    <main className="game-shell map-shell">
+      <section className="map-panel">
+        <div className="status-strip">
+          <div>
+            <p className="eyebrow">Act 1</p>
+            <h1>Ember Road</h1>
+            <p className="run-message">{run.message}</p>
+          </div>
+          <div className="turn-pill">
+            HP {run.player.hp}/{run.player.maxHp} - Deck {run.deck.length}
+          </div>
+        </div>
+
+        <div className="spire-map" aria-label="Map">
+          <MapConnections />
+          {mapRows.map((row, rowIndex) => (
+            <div className="map-row" key={`row-${rowIndex}`} style={{ zIndex: rowIndex + 1 }}>
+              {row.map((node) => {
+                const isAvailable = availableNodeIds.includes(node.id)
+                const isComplete = run.completedNodeIds.includes(node.id)
+                const isPath = run.selectedPath.includes(node.id)
+
+                return (
+                  <button
+                    className={`map-node ${node.type} ${isComplete ? 'complete' : ''} ${
+                      isPath ? 'path' : ''
+                    }`}
+                    disabled={!isAvailable}
+                    key={node.id}
+                    onClick={() => onPickNode(node)}
+                    style={{ left: `${node.x}%` }}
+                    title={node.label}
+                  >
+                    <span>{nodeIcons[node.type]}</span>
+                    <small>{node.label}</small>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+
+        <div className="map-legend">
+          <span>x Enemy</span>
+          <span>? Mystery</span>
+          <span>$ Shop</span>
+          <span>! Elite</span>
+          <span>+ Rest</span>
+          <span>B Boss</span>
+          <span>Relics {run.relics.length}</span>
+          <button onClick={onRestart}>Restart run</button>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function MapConnections() {
+  const rowCount = mapRows.length
+  const lines = mapRows.flatMap((row, rowIndex) =>
+    row.flatMap((node) =>
+      node.connections.map((connectionId) => {
+        const targetRowIndex = mapRows.findIndex((candidateRow) =>
+          candidateRow.some((candidate) => candidate.id === connectionId),
+        )
+        const target = mapRows[targetRowIndex]?.find((candidate) => candidate.id === connectionId)
+
+        if (!target) {
+          return null
+        }
+
+        const y1 = 100 - ((rowIndex + 0.5) / rowCount) * 100
+        const y2 = 100 - ((targetRowIndex + 0.5) / rowCount) * 100
+
+        return {
+          id: `${node.id}-${target.id}`,
+          x1: node.x,
+          y1,
+          x2: target.x,
+          y2,
+        }
+      }),
+    ),
+  )
+
+  return (
+    <svg className="map-connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {lines.filter(Boolean).map((line) => (
+        <line key={line.id} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+      ))}
+    </svg>
+  )
+}
+
+function RewardScreen({ run, onChoose, onSkip }) {
+  return (
+    <main className="game-shell reward-shell">
+      <section className="reward-panel">
+        <div>
+          <p className="eyebrow">{run.rewardKind === 'shop' ? 'Shop' : 'Reward'}</p>
+          <h1>{run.rewardTitle}</h1>
+          <p className="run-message">{run.message}</p>
+        </div>
+
+        <div className="reward-cards">
+          {run.rewardChoices.map((reward) => (
+            <RewardButton
+              kind={run.rewardKind}
+              key={reward.deckId ?? reward.id}
+              reward={reward}
+              onClick={() => onChoose(reward)}
+            />
+          ))}
+        </div>
+
+        {run.rewardKind !== 'relic' && (
+          <button className="secondary-action" onClick={onSkip}>
+            Leave
+          </button>
+        )}
+      </section>
+    </main>
+  )
+}
+
+function RewardButton({ kind, reward, onClick }) {
+  if (kind === 'relic') {
+    return (
+      <button className="relic-card" onClick={onClick} type="button">
+        <span>Relic</span>
+        <strong>{reward.name}</strong>
+        <p>{reward.text}</p>
+      </button>
+    )
+  }
+
+  return <CardButton card={reward} onClick={onClick} />
+}
+
+function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart }) {
+  const healthPercent = Math.round((combat.player.hp / combat.player.maxHp) * 100)
+  const enemyPercent = Math.round((combat.enemy.hp / combat.enemy.maxHp) * 100)
+
+  return (
+    <main className="game-shell">
+      <section className="battlefield" aria-label="Combat area">
+        <div className="status-strip">
+          <div>
+            <p className="eyebrow">{combat.node.type}</p>
+            <h1>{combat.node.label}</h1>
+          </div>
+          <div className="turn-pill">Turn {combat.turn}</div>
+        </div>
+
+        <div className="combatants">
+          <article className="combatant player">
+            <div className="avatar warrior" aria-hidden="true">
+              <span></span>
+            </div>
+            <div className="combatant-copy">
+              <h2>Ironclad</h2>
+              <HealthBar value={combat.player.hp} max={combat.player.maxHp} percent={healthPercent} />
+              <p>
+                Block {combat.player.block} - Strength {combat.player.strength} - Energy {combat.player.energy}/
+                {combat.player.maxEnergy}
+              </p>
+            </div>
+          </article>
+
+          <div className="versus">VS</div>
+
+          <article className="combatant enemy">
+            <div className="avatar beast" aria-hidden="true">
+              <span></span>
+            </div>
+            <div className="combatant-copy">
+              <h2>{combat.enemy.name}</h2>
+              <HealthBar value={combat.enemy.hp} max={combat.enemy.maxHp} percent={enemyPercent} />
+              <p>
+                Block {combat.enemy.block} - Strength {combat.enemy.strength}
+              </p>
+              <div className="intent">
+                {enemyMove.intent}: {describeIntent(enemyMove, combat.enemy.strength)}
+              </div>
+            </div>
+          </article>
+        </div>
+
+        {combat.outcome !== 'playing' && (
+          <div className="outcome">
+            <strong>{combat.outcome === 'won' ? 'Victory' : 'Defeat'}</strong>
+            {combat.outcome === 'lost' && <button onClick={onRestart}>Restart run</button>}
+          </div>
+        )}
+      </section>
+
+      <section className="table">
+        <aside className="pile-stats" aria-label="Deck piles">
+          <Stat label="Draw" value={combat.drawPile.length} />
+          <Stat label="Hand" value={combat.hand.length} />
+          <Stat label="Discard" value={combat.discardPile.length} />
+        </aside>
+
+        <div className="hand" aria-label="Cards in hand">
+          {combat.hand.map((card) => (
+            <CardButton
+              card={card}
+              disabled={card.cost > combat.player.energy || combat.outcome !== 'playing'}
+              key={card.instanceId}
+              onClick={() => onPlayCard(card)}
+            />
+          ))}
+        </div>
+
+        <div className="controls">
+          <button className="primary" onClick={onEndTurn} disabled={combat.outcome !== 'playing'}>
+            End Turn
+          </button>
+        </div>
+      </section>
+
+      <section className="combat-log" aria-label="Combat log">
+        {combat.log.map((entry, index) => (
+          <p key={`${entry}-${index}`}>{entry}</p>
+        ))}
+      </section>
+    </main>
+  )
+}
+
+function CardButton({ card, disabled = false, onClick }) {
+  return (
+    <button
+      className={`card ${card.type.toLowerCase()}`}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="cost">{card.cost}</span>
+      <strong>{card.name}</strong>
+      <small>{card.type}</small>
+      <p>{card.text}</p>
+    </button>
+  )
+}
+
+function HealthBar({ value, max, percent }) {
+  return (
+    <div className="health">
+      <div style={{ width: `${percent}%` }}></div>
+      <span>
+        {value}/{max}
+      </span>
+    </div>
+  )
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+export default App
