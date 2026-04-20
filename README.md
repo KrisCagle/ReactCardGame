@@ -1,16 +1,71 @@
-# React + Vite
+# React Card Game
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser-based roguelike deckbuilder prototype inspired by games like Slay the Spire. The project is built with React and Vite, with the current focus on getting a playable combat and map loop working before expanding into deeper card, relic, enemy, and event systems.
 
-Currently, two official plugins are available:
+## Current Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Branching act map with enemy, mystery, shop, elite, rest, and boss nodes
+- Turn-based combat with energy, block, enemy intent, draw pile, hand, and discard pile
+- Starter deck with attack, skill, and power cards
+- Card rewards after regular fights
+- Relic rewards from elites, bosses, and some mystery events
+- Mystery nodes that can become a fight, card cache, or relic event
+- Rest nodes that heal the player
+- Simple shop nodes that offer card choices while gold is still being built
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React
+- Vite
+- JavaScript
+- CSS
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the local dev server:
+
+```bash
+npm run dev
+```
+
+Build for production:
+
+```bash
+npm run build
+```
+
+Run lint checks:
+
+```bash
+npm run lint
+```
+
+## Gameplay Loop
+
+1. Pick a starting node on the map.
+2. Fight enemies using cards from your hand.
+3. Spend energy to attack, block, draw cards, or apply effects.
+4. Win combat to choose a reward.
+5. Return to the map and choose the next connected room.
+6. Climb toward the boss at the top of the act.
+
+## Roadmap
+
+- Generate a fresh map for each run
+- Add gold, priced shop purchases, and card removal
+- Add more enemy types and better enemy move patterns
+- Expand card effects and card rarity
+- Add more relics with persistent run modifiers
+- Add treasure, event, and choice-based mystery rooms
+- Add animations, hit feedback, and improved card movement
+- Split game data and state logic into separate modules as the prototype grows
+
+## Project Status
+
+This is an early playable prototype. The priority is to build the core systems in small, testable pieces and keep the game fun to click through while the design takes shape.
