@@ -79,17 +79,118 @@ const cardLibrary = {
     block: 5,
     text: 'Deal 5 damage. Gain 5 block.',
   },
+  twinStrike: {
+    id: 'twin-strike',
+    name: 'Twin Strike',
+    type: 'Attack',
+    cost: 1,
+    damage: 10,
+    text: 'Deal 10 damage.',
+  },
+  inflame: {
+    id: 'inflame',
+    name: 'Inflame',
+    type: 'Power',
+    cost: 1,
+    strength: 2,
+    text: 'Gain 2 strength.',
+  },
+  recover: {
+    id: 'recover',
+    name: 'Second Wind',
+    type: 'Skill',
+    cost: 1,
+    block: 9,
+    heal: 2,
+    text: 'Gain 9 block. Heal 2 HP.',
+  },
+  chargeUp: {
+    id: 'charge-up',
+    name: 'Charge Up',
+    type: 'Skill',
+    cost: 1,
+    block: 6,
+    energy: 1,
+    text: 'Gain 6 block. Gain 1 energy.',
+  },
+  uppercut: {
+    id: 'uppercut',
+    name: 'Uppercut',
+    type: 'Attack',
+    cost: 2,
+    damage: 12,
+    vulnerable: 2,
+    text: 'Deal 12 damage. Apply 2 vulnerable.',
+  },
+  bloodForBlood: {
+    id: 'blood-for-blood',
+    name: 'Blood For Blood',
+    type: 'Attack',
+    cost: 3,
+    damage: 18,
+    text: 'Deal 18 damage.',
+  },
+  warcry: {
+    id: 'warcry',
+    name: 'Warcry',
+    type: 'Skill',
+    cost: 0,
+    draw: 2,
+    block: 3,
+    text: 'Draw 2 cards. Gain 3 block.',
+  },
+  heavyBlade: {
+    id: 'heavy-blade',
+    name: 'Heavy Blade',
+    type: 'Attack',
+    cost: 2,
+    damage: 14,
+    text: 'Deal 14 damage.',
+  },
+  quickstep: {
+    id: 'quickstep',
+    name: 'Quickstep',
+    type: 'Skill',
+    cost: 0,
+    block: 4,
+    draw: 1,
+    text: 'Gain 4 block. Draw 1 card.',
+  },
+  aimedShot: {
+    id: 'aimed-shot',
+    name: 'Aimed Shot',
+    type: 'Attack',
+    cost: 1,
+    damage: 8,
+    vulnerable: 1,
+    text: 'Deal 8 damage. Apply 1 vulnerable.',
+  },
+  volley: {
+    id: 'volley',
+    name: 'Volley',
+    type: 'Attack',
+    cost: 1,
+    damage: 9,
+    draw: 1,
+    text: 'Deal 9 damage. Draw 1 card.',
+  },
+  meditate: {
+    id: 'meditate',
+    name: 'Meditate',
+    type: 'Power',
+    cost: 1,
+    block: 6,
+    text: 'Gain 6 block.',
+  },
+  emberBolt: {
+    id: 'ember-bolt',
+    name: 'Ember Bolt',
+    type: 'Attack',
+    cost: 1,
+    damage: 11,
+    text: 'Deal 11 damage.',
+  },
 }
-
-const starterDeck = [
-  cardLibrary.strike,
-  cardLibrary.strike,
-  cardLibrary.strike,
-  cardLibrary.guard,
-  cardLibrary.guard,
-  cardLibrary.bash,
-  cardLibrary.focus,
-]
 
 const rewardPool = [
   cardLibrary.cleave,
@@ -97,6 +198,19 @@ const rewardPool = [
   cardLibrary.pommel,
   cardLibrary.charge,
   cardLibrary.ironWave,
+  cardLibrary.twinStrike,
+  cardLibrary.inflame,
+  cardLibrary.recover,
+  cardLibrary.chargeUp,
+  cardLibrary.uppercut,
+  cardLibrary.bloodForBlood,
+  cardLibrary.warcry,
+  cardLibrary.heavyBlade,
+  cardLibrary.quickstep,
+  cardLibrary.aimedShot,
+  cardLibrary.volley,
+  cardLibrary.meditate,
+  cardLibrary.emberBolt,
   cardLibrary.guard,
   cardLibrary.strike,
 ]
@@ -124,6 +238,219 @@ const relicLibrary = [
     name: 'Lantern',
     text: 'Start each combat with 1 extra energy.',
     energy: 1,
+  },
+]
+
+const openingBoonPool = [
+  {
+    id: 'boon-max-hp',
+    title: 'Hardened Frame',
+    kind: 'blessing',
+    text: 'Gain 10 max HP and heal 10 HP.',
+    apply: (run) => ({
+      ...run,
+      player: {
+        maxHp: run.player.maxHp + 10,
+        hp: run.player.hp + 10,
+      },
+    }),
+  },
+  {
+    id: 'boon-vajra',
+    title: 'Take Vajra',
+    kind: 'relic',
+    relic: relicLibrary.find((relic) => relic.id === 'vajra'),
+    text: 'Start each combat with 1 strength.',
+    apply: (run, boon) => ({
+      ...run,
+      relics: [...run.relics, boon.relic],
+    }),
+  },
+  {
+    id: 'boon-anchor',
+    title: 'Take Anchor',
+    kind: 'relic',
+    relic: relicLibrary.find((relic) => relic.id === 'anchor'),
+    text: 'Start each combat with 8 block.',
+    apply: (run, boon) => ({
+      ...run,
+      relics: [...run.relics, boon.relic],
+    }),
+  },
+  {
+    id: 'boon-lantern',
+    title: 'Take Lantern',
+    kind: 'relic',
+    relic: relicLibrary.find((relic) => relic.id === 'lantern'),
+    text: 'Start each combat with 1 extra energy.',
+    apply: (run, boon) => ({
+      ...run,
+      relics: [...run.relics, boon.relic],
+    }),
+  },
+  {
+    id: 'boon-bash',
+    title: 'Take Bash',
+    kind: 'card',
+    card: cardLibrary.bash,
+    text: 'Add Bash to your opening deck.',
+    apply: (run, boon) => ({
+      ...run,
+      deck: [...run.deck, createDeckCard(boon.card, `boon-${run.deck.length}`)],
+    }),
+  },
+  {
+    id: 'boon-shrug',
+    title: 'Take Shrug It Off',
+    kind: 'card',
+    card: cardLibrary.shrug,
+    text: 'Add Shrug It Off to your opening deck.',
+    apply: (run, boon) => ({
+      ...run,
+      deck: [...run.deck, createDeckCard(boon.card, `boon-${run.deck.length}`)],
+    }),
+  },
+  {
+    id: 'boon-inflame',
+    title: 'Take Inflame',
+    kind: 'card',
+    card: cardLibrary.inflame,
+    text: 'Add Inflame to your opening deck.',
+    apply: (run, boon) => ({
+      ...run,
+      deck: [...run.deck, createDeckCard(boon.card, `boon-${run.deck.length}`)],
+    }),
+  },
+  {
+    id: 'boon-ember',
+    title: 'Take Ember Bolt',
+    kind: 'card',
+    card: cardLibrary.emberBolt,
+    text: 'Add Ember Bolt to your opening deck.',
+    apply: (run, boon) => ({
+      ...run,
+      deck: [...run.deck, createDeckCard(boon.card, `boon-${run.deck.length}`)],
+    }),
+  },
+  {
+    id: 'boon-draw',
+    title: 'Deep Breath',
+    kind: 'blessing',
+    text: 'Draw 1 extra card on turn 1 this run.',
+    apply: (run) => ({
+      ...run,
+      character: {
+        ...run.character,
+        modifiers: {
+          ...run.character.modifiers,
+          startingDraw: (run.character.modifiers?.startingDraw ?? 0) + 1,
+        },
+      },
+    }),
+  },
+  {
+    id: 'boon-rewards',
+    title: 'Sharper Eye',
+    kind: 'blessing',
+    text: 'See 1 extra card in future card rewards this run.',
+    apply: (run) => ({
+      ...run,
+      character: {
+        ...run.character,
+        modifiers: {
+          ...run.character.modifiers,
+          rewardChoicesBonus: (run.character.modifiers?.rewardChoicesBonus ?? 0) + 1,
+        },
+      },
+    }),
+  },
+]
+
+const characters = [
+  {
+    id: 'ironclad',
+    name: 'Ironclad',
+    title: 'Frontline Juggernaut',
+    avatar: 'warrior',
+    maxHp: 80,
+    summary: 'Big hits, steady healing, and the safest opening climb.',
+    traits: ['Heal 5 HP after every combat', 'Starts with heavier attacks', 'More max health'],
+    modifiers: {
+      healAfterFight: 5,
+    },
+    startingRelics: [
+      {
+        id: 'ember-heart',
+        name: 'Ember Heart',
+        text: 'Heal 5 HP after every combat.',
+      },
+    ],
+    starterDeck: [
+      cardLibrary.strike,
+      cardLibrary.strike,
+      cardLibrary.guard,
+      cardLibrary.guard,
+      cardLibrary.bash,
+      cardLibrary.uppercut,
+      cardLibrary.warcry,
+    ],
+  },
+  {
+    id: 'huntress',
+    name: 'Huntress',
+    title: 'Precision Duelist',
+    avatar: 'hunter',
+    maxHp: 72,
+    summary: 'Sees more options, draws deeper, and turns small edges into clean kills.',
+    traits: ['Draw 1 extra card on combat start', 'See 1 extra card in rewards', 'Fast, flexible opener'],
+    modifiers: {
+      startingDraw: 1,
+      rewardChoicesBonus: 1,
+    },
+    startingRelics: [
+      {
+        id: 'keen-eye',
+        name: 'Keen Eye',
+        text: 'Draw 1 extra card on turn 1. See 1 extra reward card.',
+      },
+    ],
+    starterDeck: [
+      cardLibrary.strike,
+      cardLibrary.guard,
+      cardLibrary.guard,
+      cardLibrary.quickstep,
+      cardLibrary.pommel,
+      cardLibrary.aimedShot,
+      cardLibrary.volley,
+    ],
+  },
+  {
+    id: 'arcanist',
+    name: 'Arcanist',
+    title: 'Spellfed Tactician',
+    avatar: 'mage',
+    maxHp: 68,
+    summary: 'Explodes out of the gate with extra energy and layered utility.',
+    traits: ['Start each combat with 1 extra energy', 'Start each combat with 4 block', 'Power-heavy starter deck'],
+    modifiers: {},
+    startingRelics: [
+      {
+        id: 'sun-core',
+        name: 'Sun Core',
+        text: 'Start each combat with 1 extra energy and 4 block.',
+        energy: 1,
+        block: 4,
+      },
+    ],
+    starterDeck: [
+      cardLibrary.focus,
+      cardLibrary.charge,
+      cardLibrary.inflame,
+      cardLibrary.meditate,
+      cardLibrary.ironWave,
+      cardLibrary.recover,
+      cardLibrary.emberBolt,
+    ],
   },
 ]
 
@@ -175,41 +502,91 @@ const enemies = {
 
 const mapRows = [
   [
-    { id: 'r0-a', type: 'mystery', label: 'Unknown', x: 12, connections: ['r1-a'] },
-    { id: 'r0-b', type: 'fight', label: 'Ambush', x: 28, connections: ['r1-a', 'r1-b'] },
-    { id: 'r0-c', type: 'fight', label: 'Lookout', x: 50, connections: ['r1-b', 'r1-c'] },
-    { id: 'r0-d', type: 'fight', label: 'Broken Gate', x: 70, connections: ['r1-c', 'r1-d'] },
-    { id: 'r0-e', type: 'shop', label: 'Merchant', x: 88, connections: ['r1-d'] },
+    { id: 'r0-a', type: 'mystery', label: 'Unknown', x: 10, connections: ['r1-a'] },
+    { id: 'r0-b', type: 'rest', label: 'Campfire', x: 28, connections: ['r1-a', 'r1-b'] },
+    { id: 'r0-c', type: 'shop', label: 'Merchant', x: 50, connections: ['r1-b', 'r1-c'] },
+    { id: 'r0-d', type: 'fight', label: 'Ambush', x: 72, connections: ['r1-c'] },
   ],
   [
-    { id: 'r1-a', type: 'fight', label: 'Ash Hall', x: 22, connections: ['r2-a', 'r2-b'] },
-    { id: 'r1-b', type: 'mystery', label: 'Unknown', x: 42, connections: ['r2-b'] },
-    { id: 'r1-c', type: 'shop', label: 'Merchant', x: 62, connections: ['r2-b', 'r2-c'] },
-    { id: 'r1-d', type: 'fight', label: 'Old Bridge', x: 82, connections: ['r2-c'] },
+    { id: 'r1-a', type: 'fight', label: 'Ash Hall', x: 18, connections: ['r2-a'] },
+    { id: 'r1-b', type: 'fight', label: 'Lookout', x: 36, connections: ['r2-a', 'r2-b'] },
+    { id: 'r1-c', type: 'mystery', label: 'Unknown', x: 58, connections: ['r2-b', 'r2-c'] },
+    { id: 'r1-d', type: 'fight', label: 'Old Bridge', x: 80, connections: ['r2-c'] },
   ],
   [
-    { id: 'r2-a', type: 'fight', label: 'Low Shrine', x: 18, connections: ['r3-a'] },
-    { id: 'r2-b', type: 'elite', label: 'Marked Den', x: 48, connections: ['r3-a', 'r3-b'] },
-    { id: 'r2-c', type: 'mystery', label: 'Unknown', x: 78, connections: ['r3-b'] },
+    { id: 'r2-a', type: 'mystery', label: 'Unknown', x: 16, connections: ['r3-a'] },
+    { id: 'r2-b', type: 'rest', label: 'Campfire', x: 34, connections: ['r3-a', 'r3-b'] },
+    { id: 'r2-c', type: 'fight', label: 'Torch Hall', x: 58, connections: ['r3-b', 'r3-c'] },
+    { id: 'r2-d', type: 'shop', label: 'Merchant', x: 82, connections: ['r3-c'] },
   ],
   [
-    { id: 'r3-a', type: 'rest', label: 'Campfire', x: 32, connections: ['r4-a', 'r4-b'] },
-    { id: 'r3-b', type: 'fight', label: 'Red Steps', x: 68, connections: ['r4-b', 'r4-c'] },
+    { id: 'r3-a', type: 'fight', label: 'Red Steps', x: 12, connections: ['r4-a'] },
+    { id: 'r3-b', type: 'mystery', label: 'Unknown', x: 38, connections: ['r4-a', 'r4-b'] },
+    { id: 'r3-c', type: 'elite', label: 'Marked Den', x: 70, connections: ['r4-b', 'r4-c'] },
   ],
   [
-    { id: 'r4-a', type: 'mystery', label: 'Unknown', x: 22, connections: ['r5-a'] },
-    { id: 'r4-b', type: 'fight', label: 'Torch Hall', x: 50, connections: ['r5-a', 'r5-b'] },
-    { id: 'r4-c', type: 'elite', label: 'Red Banner', x: 78, connections: ['r5-b'] },
+    { id: 'r4-a', type: 'fight', label: 'Broken Gate', x: 12, connections: ['r5-a', 'r5-b'] },
+    { id: 'r4-b', type: 'fight', label: 'Low Shrine', x: 38, connections: ['r5-b'] },
+    { id: 'r4-c', type: 'mystery', label: 'Unknown', x: 86, connections: ['r5-c'] },
   ],
   [
-    { id: 'r5-a', type: 'shop', label: 'Merchant', x: 36, connections: ['r6-a'] },
-    { id: 'r5-b', type: 'rest', label: 'Campfire', x: 64, connections: ['r6-a', 'r6-b'] },
+    { id: 'r5-a', type: 'shop', label: 'Merchant', x: 10, connections: ['r6-a'] },
+    { id: 'r5-b', type: 'shop', label: 'Merchant', x: 24, connections: ['r6-a', 'r6-b'] },
+    { id: 'r5-c', type: 'rest', label: 'Campfire', x: 56, connections: ['r6-b', 'r6-c'] },
+    { id: 'r5-d', type: 'mystery', label: 'Unknown', x: 88, connections: ['r6-c'] },
   ],
   [
-    { id: 'r6-a', type: 'fight', label: 'High Road', x: 42, connections: ['r7-a'] },
-    { id: 'r6-b', type: 'mystery', label: 'Unknown', x: 72, connections: ['r7-a'] },
+    { id: 'r6-a', type: 'mystery', label: 'Unknown', x: 12, connections: ['r7-a'] },
+    { id: 'r6-b', type: 'elite', label: 'Red Banner', x: 48, connections: ['r7-b'] },
+    { id: 'r6-c', type: 'fight', label: 'High Road', x: 84, connections: ['r7-b', 'r7-c'] },
   ],
-  [{ id: 'r7-a', type: 'boss', label: 'Hexaghost', x: 54, connections: [] }],
+  [
+    { id: 'r7-a', type: 'rest', label: 'Campfire', x: 12, connections: ['r8-a'] },
+    { id: 'r7-b', type: 'fight', label: 'Hall of Ash', x: 42, connections: ['r8-a', 'r8-b'] },
+    { id: 'r7-c', type: 'mystery', label: 'Unknown', x: 78, connections: ['r8-b'] },
+  ],
+  [
+    { id: 'r8-a', type: 'fight', label: 'Fallen Post', x: 18, connections: ['r9-a', 'r9-b'] },
+    { id: 'r8-b', type: 'fight', label: 'Last Steps', x: 66, connections: ['r9-b', 'r9-c'] },
+  ],
+  [
+    { id: 'r9-a', type: 'fight', label: 'Ash Walk', x: 20, connections: ['r10-a'] },
+    { id: 'r9-b', type: 'mystery', label: 'Unknown', x: 38, connections: ['r10-a', 'r10-b'] },
+    { id: 'r9-c', type: 'fight', label: 'Watchpoint', x: 72, connections: ['r10-b', 'r10-c'] },
+    { id: 'r9-d', type: 'elite', label: 'Skull Gate', x: 88, connections: ['r10-c'] },
+  ],
+  [
+    { id: 'r10-a', type: 'rest', label: 'Campfire', x: 10, connections: ['r11-a'] },
+    { id: 'r10-b', type: 'shop', label: 'Merchant', x: 38, connections: ['r11-a', 'r11-b'] },
+    { id: 'r10-c', type: 'mystery', label: 'Unknown', x: 82, connections: ['r11-b'] },
+  ],
+  [
+    { id: 'r11-a', type: 'fight', label: 'Red Hall', x: 16, connections: ['r12-a'] },
+    { id: 'r11-b', type: 'fight', label: 'Stone Bridge', x: 46, connections: ['r12-a', 'r12-b'] },
+    { id: 'r11-c', type: 'mystery', label: 'Unknown', x: 82, connections: ['r12-b'] },
+  ],
+  [
+    { id: 'r12-a', type: 'mystery', label: 'Unknown', x: 26, connections: ['r13-a', 'r13-b'] },
+    { id: 'r12-b', type: 'rest', label: 'Campfire', x: 52, connections: ['r13-b', 'r13-c'] },
+    { id: 'r12-c', type: 'fight', label: 'Cinder Hall', x: 78, connections: ['r13-c'] },
+  ],
+  [
+    { id: 'r13-a', type: 'elite', label: 'Crown Den', x: 18, connections: ['r14-a'] },
+    { id: 'r13-b', type: 'mystery', label: 'Unknown', x: 38, connections: ['r14-a', 'r14-b'] },
+    { id: 'r13-c', type: 'shop', label: 'Merchant', x: 66, connections: ['r14-b'] },
+    { id: 'r13-d', type: 'fight', label: 'High Tower', x: 90, connections: ['r14-c'] },
+  ],
+  [
+    { id: 'r14-a', type: 'fight', label: 'Ashen Rise', x: 12, connections: ['r15-b'] },
+    { id: 'r14-b', type: 'rest', label: 'Final Fire', x: 42, connections: ['r15-a', 'r15-b', 'r15-c'] },
+    { id: 'r14-c', type: 'mystery', label: 'Unknown', x: 78, connections: ['r15-c'] },
+  ],
+  [
+    { id: 'r15-a', type: 'fight', label: 'Boss Approach', x: 24, connections: ['r16-a'] },
+    { id: 'r15-b', type: 'fight', label: 'Boss Approach', x: 50, connections: ['r16-a'] },
+    { id: 'r15-c', type: 'fight', label: 'Boss Approach', x: 76, connections: ['r16-a'] },
+  ],
+  [{ id: 'r16-a', type: 'boss', label: 'Hexaghost', x: 50, connections: [] }],
 ]
 
 const nodeIcons = {
@@ -246,40 +623,90 @@ const takeRandom = (items, amount) => shuffle(items).slice(0, amount)
 
 const findNode = (nodeId) => mapRows.flat().find((node) => node.id === nodeId)
 
-const createEnemy = (nodeType) => {
+const getNodeRowIndex = (nodeId) => mapRows.findIndex((row) => row.some((node) => node.id === nodeId))
+
+const scaleMove = (move, nodeType, rowIndex, act) => {
+  const depthBoost = rowIndex
+  const actBoost = Math.max(0, act - 1)
+  const damageScale = nodeType === 'boss' ? 2 + actBoost : nodeType === 'elite' ? 1 + actBoost : actBoost
+  const hpScale = nodeType === 'boss' ? 14 + actBoost * 8 : nodeType === 'elite' ? 8 + actBoost * 5 : 4 + actBoost * 3
+
+  return {
+    move: {
+      ...move,
+      damage: move.damage ? move.damage + Math.floor(depthBoost / 2) + damageScale : undefined,
+      block: move.block ? move.block + Math.floor(depthBoost / 3) : undefined,
+      strength: move.strength ? move.strength + Math.floor(depthBoost / 4) : undefined,
+    },
+    hpScale,
+  }
+}
+
+const createEnemy = (nodeType, rowIndex, act) => {
   const candidates = enemies[nodeType] ?? enemies.fight
   const enemy = candidates[Math.floor(Math.random() * candidates.length)]
+  const scaledMoves = enemy.moves.map((move) => scaleMove(move, nodeType, rowIndex, act).move)
+  const hpScale = scaleMove(enemy.moves[0], nodeType, rowIndex, act).hpScale
 
   return {
     ...enemy,
-    hp: enemy.maxHp,
+    maxHp: enemy.maxHp + hpScale + rowIndex * (nodeType === 'boss' ? 4 : 2),
+    hp: enemy.maxHp + hpScale + rowIndex * (nodeType === 'boss' ? 4 : 2),
     block: 0,
     strength: 0,
     vulnerable: 0,
     moveIndex: 0,
+    moves: scaledMoves,
   }
 }
 
-const createRun = () => ({
-  screen: 'map',
-  deck: starterDeck.map((card, index) => createDeckCard(card, `starter-${index}`)),
+const createInitialRun = () => ({
+  screen: 'characterSelect',
+  character: null,
+  deck: [],
   relics: [],
   player: {
-    maxHp: 70,
-    hp: 70,
+    maxHp: 0,
+    hp: 0,
   },
   currentNodeId: null,
   completedNodeIds: [],
   selectedPath: [],
   rewardChoices: [],
+  openingChoices: [],
   rewardKind: 'card',
   rewardTitle: 'Choose a Card',
-  message: 'Choose your first room.',
+  rewardSource: null,
+  act: 1,
+  message: 'Choose your champion.',
+})
+
+const createRunFromCharacter = (character) => ({
+  screen: 'openingBoon',
+  character,
+  deck: character.starterDeck.map((card, index) => createDeckCard(card, `${character.id}-starter-${index}`)),
+  relics: [...character.startingRelics],
+  player: {
+    maxHp: character.maxHp,
+    hp: character.maxHp,
+  },
+  currentNodeId: null,
+  completedNodeIds: [],
+  selectedPath: [],
+  rewardChoices: [],
+  openingChoices: takeRandom(openingBoonPool, 3),
+  rewardKind: 'card',
+  rewardTitle: 'Choose a Card',
+  rewardSource: null,
+  act: 1,
+  message: `${character.name} enters the climb. Pick one opening boon.`,
 })
 
 const createCombat = (run, node) => {
+  const handSize = 5 + (run.character?.modifiers?.startingDraw ?? 0)
   const deck = shuffle(run.deck.map((card, index) => cloneCard(card, `${node.id}-${index}`)))
-  const hand = deck.slice(0, 5)
+  const hand = deck.slice(0, handSize)
+  const rowIndex = getNodeRowIndex(node.id)
 
   return {
     node,
@@ -291,8 +718,8 @@ const createCombat = (run, node) => {
       maxEnergy: 3,
       strength: run.relics.reduce((total, relic) => total + (relic.strength ?? 0), 0),
     },
-    enemy: createEnemy(node.type),
-    drawPile: deck.slice(5),
+    enemy: createEnemy(node.type, rowIndex, run.act),
+    drawPile: deck.slice(handSize),
     hand,
     discardPile: [],
     turn: 1,
@@ -355,8 +782,10 @@ const getAvailableNodeIds = (run) => {
   return node?.connections ?? []
 }
 
+const getRewardCount = (run, base) => base + (run.character?.modifiers?.rewardChoicesBonus ?? 0)
+
 function App() {
-  const [run, setRun] = useState(createRun)
+  const [run, setRun] = useState(createInitialRun)
   const [combat, setCombat] = useState(null)
 
   const enemyMove = useMemo(() => {
@@ -366,6 +795,24 @@ function App() {
 
     return combat.enemy.moves[combat.enemy.moveIndex % combat.enemy.moves.length]
   }, [combat])
+
+  const chooseCharacter = (character) => {
+    setCombat(null)
+    setRun(createRunFromCharacter(character))
+  }
+
+  const chooseOpeningBoon = (boon) => {
+    setRun((current) => {
+      const updated = boon.apply(current, boon)
+
+      return {
+        ...updated,
+        screen: 'map',
+        openingChoices: [],
+        message: `${boon.title} chosen. Choose your first room.`,
+      }
+    })
+  }
 
   const startNode = (node) => {
     if (node.type === 'rest') {
@@ -391,9 +838,10 @@ function App() {
         currentNodeId: node.id,
         completedNodeIds: [...current.completedNodeIds, node.id],
         selectedPath: [...current.selectedPath, node.id],
-        rewardChoices: takeRandom(rewardPool, 3),
+        rewardChoices: takeRandom(rewardPool, getRewardCount(current, 5)),
         rewardKind: 'shop',
         rewardTitle: 'Merchant Wares',
+        rewardSource: 'shop',
         message: 'Take one card from the merchant while gold is still imaginary.',
       }))
       return
@@ -436,9 +884,10 @@ function App() {
         currentNodeId: node.id,
         completedNodeIds: [...current.completedNodeIds, node.id],
         selectedPath: [...current.selectedPath, node.id],
-        rewardChoices: takeRandom(rewardPool, 3),
+        rewardChoices: takeRandom(rewardPool, getRewardCount(current, 4)),
         rewardKind: 'card',
         rewardTitle: 'Forgotten Cache',
+        rewardSource: 'mystery',
         message: 'A hidden cache offers a card.',
       }))
       return
@@ -453,6 +902,7 @@ function App() {
       rewardChoices: takeRandom(relicLibrary, 3),
       rewardKind: 'relic',
       rewardTitle: 'Strange Relic',
+      rewardSource: 'mystery',
       message: 'A strange power waits in the dust.',
     }))
   }
@@ -497,6 +947,11 @@ function App() {
       messages.push(`${card.name} adds ${card.block} block.`)
     }
 
+    if (card.strength) {
+      next.player.strength += card.strength
+      messages.push(`${card.name} grants ${card.strength} strength.`)
+    }
+
     if (card.vulnerable) {
       next.enemy.vulnerable = (next.enemy.vulnerable ?? 0) + card.vulnerable
       messages.push(`${card.name} exposes the enemy.`)
@@ -507,23 +962,35 @@ function App() {
       messages.push(`${card.name} draws ${card.draw}.`)
     }
 
+    if (card.heal) {
+      next.player.hp = Math.min(next.player.maxHp, next.player.hp + card.heal)
+      messages.push(`${card.name} restores ${card.heal} HP.`)
+    }
+
     if (next.enemy.hp <= 0) {
       const isEliteOrBoss = ['elite', 'boss'].includes(next.node.type)
+      const bonusHeal = run.character?.modifiers?.healAfterFight ?? 0
       const burningBlood = run.relics.some((relic) => relic.id === 'burning-blood')
-      const healedHp = burningBlood && isEliteOrBoss ? Math.min(run.player.maxHp, next.player.hp + 6) : next.player.hp
+      const relicHeal = burningBlood && isEliteOrBoss ? 6 : 0
+      const healedHp = Math.min(run.player.maxHp, next.player.hp + bonusHeal + relicHeal)
 
       setRun((current) => ({
         ...current,
-        screen: isEliteOrBoss ? 'reward' : 'reward',
+        screen: 'reward',
         player: {
           ...current.player,
           hp: healedHp,
         },
         completedNodeIds: [...current.completedNodeIds, next.node.id],
-        rewardChoices: isEliteOrBoss ? takeRandom(relicLibrary, 3) : takeRandom(rewardPool, 3),
+        rewardChoices: isEliteOrBoss ? takeRandom(relicLibrary, 3) : takeRandom(rewardPool, getRewardCount(current, 4)),
         rewardKind: isEliteOrBoss ? 'relic' : 'card',
         rewardTitle: isEliteOrBoss ? 'Claim a Relic' : 'Choose a Card',
-        message: isEliteOrBoss ? 'The elite drops a relic.' : 'Choose one card for your deck.',
+        rewardSource: next.node.type,
+        message: isEliteOrBoss
+          ? next.node.type === 'boss'
+            ? 'The boss falls. Claim a relic and climb again.'
+            : 'The elite drops a relic.'
+          : 'Choose one card for your deck.',
       }))
       setCombat(null)
       return
@@ -595,16 +1062,25 @@ function App() {
     })
   }
 
-  const chooseReward = (card) => {
+  const chooseReward = (reward) => {
+    const startsNewAct = run.rewardSource === 'boss'
+
     if (run.rewardKind === 'relic') {
       setRun((current) => ({
         ...current,
         screen: 'map',
-        relics: [...current.relics, card],
+        relics: [...current.relics, reward],
+        currentNodeId: startsNewAct ? null : current.currentNodeId,
+        completedNodeIds: startsNewAct ? [] : current.completedNodeIds,
+        selectedPath: startsNewAct ? [] : current.selectedPath,
         rewardChoices: [],
         rewardKind: 'card',
         rewardTitle: 'Choose a Card',
-        message: `${card.name} claimed. Choose your next room.`,
+        rewardSource: null,
+        act: startsNewAct ? current.act + 1 : current.act,
+        message: startsNewAct
+          ? `${reward.name} claimed. Act ${current.act + 1} begins. Choose your first room.`
+          : `${reward.name} claimed. Choose your next room.`,
       }))
       return
     }
@@ -612,28 +1088,52 @@ function App() {
     setRun((current) => ({
       ...current,
       screen: 'map',
-      deck: [...current.deck, createDeckCard(card, `reward-${current.deck.length}`)],
+      deck: [...current.deck, createDeckCard(reward, `reward-${current.deck.length}`)],
+      currentNodeId: startsNewAct ? null : current.currentNodeId,
+      completedNodeIds: startsNewAct ? [] : current.completedNodeIds,
+      selectedPath: startsNewAct ? [] : current.selectedPath,
       rewardChoices: [],
       rewardKind: 'card',
       rewardTitle: 'Choose a Card',
-      message: `${card.name} added. Choose your next room.`,
+      rewardSource: null,
+      act: startsNewAct ? current.act + 1 : current.act,
+      message: startsNewAct
+        ? `${reward.name} added. Act ${current.act + 1} begins. Choose your first room.`
+        : `${reward.name} added. Choose your next room.`,
     }))
   }
 
   const skipReward = () => {
+    const startsNewAct = run.rewardSource === 'boss'
+
     setRun((current) => ({
       ...current,
       screen: 'map',
+      currentNodeId: startsNewAct ? null : current.currentNodeId,
+      completedNodeIds: startsNewAct ? [] : current.completedNodeIds,
+      selectedPath: startsNewAct ? [] : current.selectedPath,
       rewardChoices: [],
       rewardKind: 'card',
       rewardTitle: 'Choose a Card',
-      message: 'No card added. Choose your next room.',
+      rewardSource: null,
+      act: startsNewAct ? current.act + 1 : current.act,
+      message: startsNewAct
+        ? `You move on without taking a reward. Act ${current.act + 1} begins. Choose your first room.`
+        : 'No card added. Choose your next room.',
     }))
   }
 
   const restartRun = () => {
     setCombat(null)
-    setRun(createRun())
+    setRun(createInitialRun())
+  }
+
+  if (run.screen === 'characterSelect') {
+    return <CharacterSelectScreen onChoose={chooseCharacter} />
+  }
+
+  if (run.screen === 'openingBoon') {
+    return <OpeningBoonScreen run={run} onChoose={chooseOpeningBoon} />
   }
 
   if (run.screen === 'map') {
@@ -651,7 +1151,67 @@ function App() {
       onEndTurn={endTurn}
       onPlayCard={playCard}
       onRestart={restartRun}
+      run={run}
     />
+  )
+}
+
+function CharacterSelectScreen({ onChoose }) {
+  return (
+    <main className="game-shell select-shell">
+      <section className="select-panel">
+        <div className="select-copy">
+          <p className="eyebrow">New Run</p>
+          <h1>Choose Your Fighter</h1>
+          <p className="run-message">
+            Each character begins with a different deck, passive edge, and approach to the climb.
+          </p>
+        </div>
+
+        <div className="character-grid">
+          {characters.map((character) => (
+            <button className="character-card" key={character.id} onClick={() => onChoose(character)} type="button">
+              <div className={`avatar ${character.avatar} large`} aria-hidden="true">
+                <span></span>
+              </div>
+              <div className="character-copy">
+                <p className="eyebrow">{character.title}</p>
+                <h2>{character.name}</h2>
+                <p>{character.summary}</p>
+                <strong>{character.maxHp} HP</strong>
+                <ul className="trait-list">
+                  {character.traits.map((trait) => (
+                    <li key={trait}>{trait}</li>
+                  ))}
+                </ul>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function OpeningBoonScreen({ run, onChoose }) {
+  return (
+    <main className="game-shell reward-shell">
+      <section className="reward-panel">
+        <div>
+          <p className="eyebrow">Opening Choice</p>
+          <h1>{run.character.name}'s First Edge</h1>
+          <p className="run-message">
+            Each run offers three different openings from a larger pool. Pick one and begin the climb.
+          </p>
+        </div>
+
+        <div className="reward-cards">
+          {run.openingChoices.map((boon) => (
+            <OpeningBoonButton boon={boon} key={boon.id} onClick={() => onChoose(boon)} />
+          ))}
+        </div>
+      </section>
+    </main>
   )
 }
 
@@ -663,8 +1223,8 @@ function MapScreen({ run, onPickNode, onRestart }) {
       <section className="map-panel">
         <div className="status-strip">
           <div>
-            <p className="eyebrow">Act 1</p>
-            <h1>Ember Road</h1>
+            <p className="eyebrow">Act {run.act}</p>
+            <h1>{run.character.name} on Ember Road</h1>
             <p className="run-message">{run.message}</p>
           </div>
           <div className="turn-pill">
@@ -691,6 +1251,7 @@ function MapScreen({ run, onPickNode, onRestart }) {
                     onClick={() => onPickNode(node)}
                     style={{ left: `${node.x}%` }}
                     title={node.label}
+                    type="button"
                   >
                     <span>{nodeIcons[node.type]}</span>
                     <small>{node.label}</small>
@@ -709,7 +1270,9 @@ function MapScreen({ run, onPickNode, onRestart }) {
           <span>+ Rest</span>
           <span>B Boss</span>
           <span>Relics {run.relics.length}</span>
-          <button onClick={onRestart}>Restart run</button>
+          <button onClick={onRestart} type="button">
+            Restart run
+          </button>
         </div>
       </section>
     </main>
@@ -767,7 +1330,7 @@ function RewardScreen({ run, onChoose, onSkip }) {
           {run.rewardChoices.map((reward) => (
             <RewardButton
               kind={run.rewardKind}
-              key={reward.deckId ?? reward.id}
+              key={`${reward.deckId ?? reward.id}-${run.rewardKind}-${run.rewardTitle}-${reward.name}`}
               reward={reward}
               onClick={() => onChoose(reward)}
             />
@@ -775,7 +1338,7 @@ function RewardScreen({ run, onChoose, onSkip }) {
         </div>
 
         {run.rewardKind !== 'relic' && (
-          <button className="secondary-action" onClick={onSkip}>
+          <button className="secondary-action" onClick={onSkip} type="button">
             Leave
           </button>
         )}
@@ -798,7 +1361,37 @@ function RewardButton({ kind, reward, onClick }) {
   return <CardButton card={reward} onClick={onClick} />
 }
 
-function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart }) {
+function OpeningBoonButton({ boon, onClick }) {
+  if (boon.kind === 'card') {
+    return (
+      <button className="boon-card" onClick={onClick} type="button">
+        <span>Card</span>
+        <strong>{boon.title}</strong>
+        <p>{boon.text}</p>
+      </button>
+    )
+  }
+
+  if (boon.kind === 'relic') {
+    return (
+      <button className="boon-card" onClick={onClick} type="button">
+        <span>Relic</span>
+        <strong>{boon.title}</strong>
+        <p>{boon.text}</p>
+      </button>
+    )
+  }
+
+  return (
+    <button className="boon-card" onClick={onClick} type="button">
+      <span>Blessing</span>
+      <strong>{boon.title}</strong>
+      <p>{boon.text}</p>
+    </button>
+  )
+}
+
+function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart, run }) {
   const healthPercent = Math.round((combat.player.hp / combat.player.maxHp) * 100)
   const enemyPercent = Math.round((combat.enemy.hp / combat.enemy.maxHp) * 100)
 
@@ -815,11 +1408,11 @@ function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart }) {
 
         <div className="combatants">
           <article className="combatant player">
-            <div className="avatar warrior" aria-hidden="true">
+            <div className={`avatar ${run.character.avatar}`} aria-hidden="true">
               <span></span>
             </div>
             <div className="combatant-copy">
-              <h2>Ironclad</h2>
+              <h2>{run.character.name}</h2>
               <HealthBar value={combat.player.hp} max={combat.player.maxHp} percent={healthPercent} />
               <p>
                 Block {combat.player.block} - Strength {combat.player.strength} - Energy {combat.player.energy}/
@@ -850,7 +1443,11 @@ function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart }) {
         {combat.outcome !== 'playing' && (
           <div className="outcome">
             <strong>{combat.outcome === 'won' ? 'Victory' : 'Defeat'}</strong>
-            {combat.outcome === 'lost' && <button onClick={onRestart}>Restart run</button>}
+            {combat.outcome === 'lost' && (
+              <button onClick={onRestart} type="button">
+                Restart run
+              </button>
+            )}
           </div>
         )}
       </section>
@@ -874,7 +1471,7 @@ function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart }) {
         </div>
 
         <div className="controls">
-          <button className="primary" onClick={onEndTurn} disabled={combat.outcome !== 'playing'}>
+          <button className="primary" onClick={onEndTurn} disabled={combat.outcome !== 'playing'} type="button">
             End Turn
           </button>
         </div>
@@ -891,12 +1488,7 @@ function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart }) {
 
 function CardButton({ card, disabled = false, onClick }) {
   return (
-    <button
-      className={`card ${card.type.toLowerCase()}`}
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
+    <button className={`card ${card.type.toLowerCase()}`} disabled={disabled} onClick={onClick} type="button">
       <span className="cost">{card.cost}</span>
       <strong>{card.name}</strong>
       <small>{card.type}</small>
