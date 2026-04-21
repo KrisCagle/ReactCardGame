@@ -79,6 +79,74 @@ const cardLibrary = {
     block: 5,
     text: 'Deal 5 damage. Gain 5 block.',
   },
+  twinStrike: {
+    id: 'twin-strike',
+    name: 'Twin Strike',
+    type: 'Attack',
+    cost: 1,
+    damage: 10,
+    text: 'Deal 10 damage.',
+  },
+  inflame: {
+    id: 'inflame',
+    name: 'Inflame',
+    type: 'Power',
+    cost: 1,
+    strength: 2,
+    text: 'Gain 2 strength.',
+  },
+  recover: {
+    id: 'recover',
+    name: 'Second Wind',
+    type: 'Skill',
+    cost: 1,
+    block: 9,
+    heal: 2,
+    text: 'Gain 9 block. Heal 2 HP.',
+  },
+  chargeUp: {
+    id: 'charge-up',
+    name: 'Charge Up',
+    type: 'Skill',
+    cost: 1,
+    block: 6,
+    energy: 1,
+    text: 'Gain 6 block. Gain 1 energy.',
+  },
+  uppercut: {
+    id: 'uppercut',
+    name: 'Uppercut',
+    type: 'Attack',
+    cost: 2,
+    damage: 12,
+    vulnerable: 2,
+    text: 'Deal 12 damage. Apply 2 vulnerable.',
+  },
+  bloodForBlood: {
+    id: 'blood-for-blood',
+    name: 'Blood For Blood',
+    type: 'Attack',
+    cost: 3,
+    damage: 18,
+    text: 'Deal 18 damage.',
+  },
+  warcry: {
+    id: 'warcry',
+    name: 'Warcry',
+    type: 'Skill',
+    cost: 0,
+    draw: 2,
+    block: 3,
+    text: 'Draw 2 cards. Gain 3 block.',
+  },
+  heavyBlade: {
+    id: 'heavy-blade',
+    name: 'Heavy Blade',
+    type: 'Attack',
+    cost: 2,
+    damage: 14,
+    text: 'Deal 14 damage.',
+  },
 }
 
 const starterDeck = [
@@ -97,6 +165,14 @@ const rewardPool = [
   cardLibrary.pommel,
   cardLibrary.charge,
   cardLibrary.ironWave,
+  cardLibrary.twinStrike,
+  cardLibrary.inflame,
+  cardLibrary.recover,
+  cardLibrary.chargeUp,
+  cardLibrary.uppercut,
+  cardLibrary.bloodForBlood,
+  cardLibrary.warcry,
+  cardLibrary.heavyBlade,
   cardLibrary.guard,
   cardLibrary.strike,
 ]
@@ -246,17 +322,40 @@ const takeRandom = (items, amount) => shuffle(items).slice(0, amount)
 
 const findNode = (nodeId) => mapRows.flat().find((node) => node.id === nodeId)
 
-const createEnemy = (nodeType) => {
+const getNodeRowIndex = (nodeId) => mapRows.findIndex((row) => row.some((node) => node.id === nodeId))
+
+const scaleMove = (move, nodeType, rowIndex, act) => {
+  const depthBoost = rowIndex
+  const actBoost = Math.max(0, act - 1)
+  const damageScale = nodeType === 'boss' ? 2 + actBoost : nodeType === 'elite' ? 1 + actBoost : actBoost
+  const hpScale = nodeType === 'boss' ? 14 + actBoost * 8 : nodeType === 'elite' ? 8 + actBoost * 5 : 4 + actBoost * 3
+
+  return {
+    move: {
+      ...move,
+      damage: move.damage ? move.damage + Math.floor(depthBoost / 2) + damageScale : undefined,
+      block: move.block ? move.block + Math.floor(depthBoost / 3) : undefined,
+      strength: move.strength ? move.strength + Math.floor(depthBoost / 4) : undefined,
+    },
+    hpScale,
+  }
+}
+
+const createEnemy = (nodeType, rowIndex, act) => {
   const candidates = enemies[nodeType] ?? enemies.fight
   const enemy = candidates[Math.floor(Math.random() * candidates.length)]
+  const scaledMoves = enemy.moves.map((move) => scaleMove(move, nodeType, rowIndex, act).move)
+  const hpScale = scaleMove(enemy.moves[0], nodeType, rowIndex, act).hpScale
 
   return {
     ...enemy,
-    hp: enemy.maxHp,
+    maxHp: enemy.maxHp + hpScale + rowIndex * (nodeType === 'boss' ? 4 : 2),
+    hp: enemy.maxHp + hpScale + rowIndex * (nodeType === 'boss' ? 4 : 2),
     block: 0,
     strength: 0,
     vulnerable: 0,
     moveIndex: 0,
+    moves: scaledMoves,
   }
 }
 
@@ -274,12 +373,15 @@ const createRun = () => ({
   rewardChoices: [],
   rewardKind: 'card',
   rewardTitle: 'Choose a Card',
+  rewardSource: null,
+  act: 1,
   message: 'Choose your first room.',
 })
 
 const createCombat = (run, node) => {
   const deck = shuffle(run.deck.map((card, index) => cloneCard(card, `${node.id}-${index}`)))
   const hand = deck.slice(0, 5)
+  const rowIndex = getNodeRowIndex(node.id)
 
   return {
     node,
@@ -291,7 +393,7 @@ const createCombat = (run, node) => {
       maxEnergy: 3,
       strength: run.relics.reduce((total, relic) => total + (relic.strength ?? 0), 0),
     },
-    enemy: createEnemy(node.type),
+    enemy: createEnemy(node.type, rowIndex, run.act),
     drawPile: deck.slice(5),
     hand,
     discardPile: [],
@@ -391,9 +493,10 @@ function App() {
         currentNodeId: node.id,
         completedNodeIds: [...current.completedNodeIds, node.id],
         selectedPath: [...current.selectedPath, node.id],
-        rewardChoices: takeRandom(rewardPool, 3),
+        rewardChoices: takeRandom(rewardPool, 5),
         rewardKind: 'shop',
         rewardTitle: 'Merchant Wares',
+        rewardSource: 'shop',
         message: 'Take one card from the merchant while gold is still imaginary.',
       }))
       return
@@ -436,9 +539,10 @@ function App() {
         currentNodeId: node.id,
         completedNodeIds: [...current.completedNodeIds, node.id],
         selectedPath: [...current.selectedPath, node.id],
-        rewardChoices: takeRandom(rewardPool, 3),
+        rewardChoices: takeRandom(rewardPool, 4),
         rewardKind: 'card',
         rewardTitle: 'Forgotten Cache',
+        rewardSource: 'mystery',
         message: 'A hidden cache offers a card.',
       }))
       return
@@ -453,6 +557,7 @@ function App() {
       rewardChoices: takeRandom(relicLibrary, 3),
       rewardKind: 'relic',
       rewardTitle: 'Strange Relic',
+      rewardSource: 'mystery',
       message: 'A strange power waits in the dust.',
     }))
   }
@@ -497,6 +602,11 @@ function App() {
       messages.push(`${card.name} adds ${card.block} block.`)
     }
 
+    if (card.strength) {
+      next.player.strength += card.strength
+      messages.push(`${card.name} grants ${card.strength} strength.`)
+    }
+
     if (card.vulnerable) {
       next.enemy.vulnerable = (next.enemy.vulnerable ?? 0) + card.vulnerable
       messages.push(`${card.name} exposes the enemy.`)
@@ -507,6 +617,11 @@ function App() {
       messages.push(`${card.name} draws ${card.draw}.`)
     }
 
+    if (card.heal) {
+      next.player.hp = Math.min(next.player.maxHp, next.player.hp + card.heal)
+      messages.push(`${card.name} restores ${card.heal} HP.`)
+    }
+
     if (next.enemy.hp <= 0) {
       const isEliteOrBoss = ['elite', 'boss'].includes(next.node.type)
       const burningBlood = run.relics.some((relic) => relic.id === 'burning-blood')
@@ -514,16 +629,21 @@ function App() {
 
       setRun((current) => ({
         ...current,
-        screen: isEliteOrBoss ? 'reward' : 'reward',
+        screen: 'reward',
         player: {
           ...current.player,
           hp: healedHp,
         },
         completedNodeIds: [...current.completedNodeIds, next.node.id],
-        rewardChoices: isEliteOrBoss ? takeRandom(relicLibrary, 3) : takeRandom(rewardPool, 3),
+        rewardChoices: isEliteOrBoss ? takeRandom(relicLibrary, 3) : takeRandom(rewardPool, 4),
         rewardKind: isEliteOrBoss ? 'relic' : 'card',
         rewardTitle: isEliteOrBoss ? 'Claim a Relic' : 'Choose a Card',
-        message: isEliteOrBoss ? 'The elite drops a relic.' : 'Choose one card for your deck.',
+        rewardSource: next.node.type,
+        message: isEliteOrBoss
+          ? next.node.type === 'boss'
+            ? 'The boss falls. Claim a relic and climb again.'
+            : 'The elite drops a relic.'
+          : 'Choose one card for your deck.',
       }))
       setCombat(null)
       return
@@ -596,15 +716,24 @@ function App() {
   }
 
   const chooseReward = (card) => {
+    const startsNewAct = run.rewardSource === 'boss'
+
     if (run.rewardKind === 'relic') {
       setRun((current) => ({
         ...current,
         screen: 'map',
         relics: [...current.relics, card],
+        currentNodeId: startsNewAct ? null : current.currentNodeId,
+        completedNodeIds: startsNewAct ? [] : current.completedNodeIds,
+        selectedPath: startsNewAct ? [] : current.selectedPath,
         rewardChoices: [],
         rewardKind: 'card',
         rewardTitle: 'Choose a Card',
-        message: `${card.name} claimed. Choose your next room.`,
+        rewardSource: null,
+        act: startsNewAct ? current.act + 1 : current.act,
+        message: startsNewAct
+          ? `${card.name} claimed. Act ${current.act + 1} begins. Choose your first room.`
+          : `${card.name} claimed. Choose your next room.`,
       }))
       return
     }
@@ -613,21 +742,37 @@ function App() {
       ...current,
       screen: 'map',
       deck: [...current.deck, createDeckCard(card, `reward-${current.deck.length}`)],
+      currentNodeId: startsNewAct ? null : current.currentNodeId,
+      completedNodeIds: startsNewAct ? [] : current.completedNodeIds,
+      selectedPath: startsNewAct ? [] : current.selectedPath,
       rewardChoices: [],
       rewardKind: 'card',
       rewardTitle: 'Choose a Card',
-      message: `${card.name} added. Choose your next room.`,
+      rewardSource: null,
+      act: startsNewAct ? current.act + 1 : current.act,
+      message: startsNewAct
+        ? `${card.name} added. Act ${current.act + 1} begins. Choose your first room.`
+        : `${card.name} added. Choose your next room.`,
     }))
   }
 
   const skipReward = () => {
+    const startsNewAct = run.rewardSource === 'boss'
+
     setRun((current) => ({
       ...current,
       screen: 'map',
+      currentNodeId: startsNewAct ? null : current.currentNodeId,
+      completedNodeIds: startsNewAct ? [] : current.completedNodeIds,
+      selectedPath: startsNewAct ? [] : current.selectedPath,
       rewardChoices: [],
       rewardKind: 'card',
       rewardTitle: 'Choose a Card',
-      message: 'No card added. Choose your next room.',
+      rewardSource: null,
+      act: startsNewAct ? current.act + 1 : current.act,
+      message: startsNewAct
+        ? `You move on without taking a reward. Act ${current.act + 1} begins. Choose your first room.`
+        : 'No card added. Choose your next room.',
     }))
   }
 
@@ -663,8 +808,8 @@ function MapScreen({ run, onPickNode, onRestart }) {
       <section className="map-panel">
         <div className="status-strip">
           <div>
-            <p className="eyebrow">Act 1</p>
-            <h1>Ember Road</h1>
+            <p className="eyebrow">Act {run.act}</p>
+            <h1>SLS But in Browser (so you can play at work)</h1>
             <p className="run-message">{run.message}</p>
           </div>
           <div className="turn-pill">
@@ -767,7 +912,7 @@ function RewardScreen({ run, onChoose, onSkip }) {
           {run.rewardChoices.map((reward) => (
             <RewardButton
               kind={run.rewardKind}
-              key={reward.deckId ?? reward.id}
+              key={`${reward.deckId ?? reward.id}-${run.rewardKind}-${run.rewardTitle}-${reward.name}`}
               reward={reward}
               onClick={() => onChoose(reward)}
             />
