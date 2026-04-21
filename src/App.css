@@ -11,7 +11,8 @@
 }
 
 .map-shell,
-.reward-shell {
+.reward-shell,
+.select-shell {
   grid-template-rows: 1fr;
   padding: 32px clamp(16px, 4vw, 56px);
 }
@@ -33,7 +34,8 @@
 }
 
 .map-panel,
-.reward-panel {
+.reward-panel,
+.select-panel {
   width: min(1180px, 100%);
   margin: 0 auto;
   display: grid;
@@ -81,7 +83,8 @@ h2 {
 .map-node,
 .map-legend,
 .reward-panel,
-.relic-card {
+.relic-card,
+.boon-card {
   border: 1px solid rgba(245, 241, 232, 0.22);
   background: rgba(12, 16, 18, 0.64);
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.24);
@@ -154,6 +157,29 @@ h2 {
   transform: rotate(8deg);
 }
 
+.hunter span {
+  border-radius: 30% 46% 20% 20%;
+  background:
+    radial-gradient(circle at 31% 28%, #f0e7d2 0 9%, transparent 10%),
+    radial-gradient(circle at 69% 28%, #f0e7d2 0 9%, transparent 10%),
+    linear-gradient(145deg, #35585f 0 40%, #1d252a 41% 58%, #6ea78d 59%);
+}
+
+.mage span {
+  border-radius: 24% 24% 42% 42%;
+  background:
+    radial-gradient(circle at 50% 22%, #ffe082 0 10%, transparent 11%),
+    linear-gradient(145deg, #c7e0f1 0 30%, #5d79aa 31% 50%, #263040 51%);
+}
+
+.avatar.large {
+  width: 112px;
+}
+
+.avatar.large span {
+  width: 92px;
+}
+
 .combatant-copy {
   display: grid;
   gap: 10px;
@@ -215,35 +241,14 @@ h2 {
 }
 
 .spire-map {
-  min-height: 780px;
+  min-height: 1180px;
   position: relative;
   display: flex;
   flex-direction: column-reverse;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(25, 29, 29, 0.26), rgba(11, 14, 15, 0.7)),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.04) 0,
-      rgba(255, 255, 255, 0.04) 1px,
-      transparent 1px,
-      transparent 90px
-    );
-}
-
-.spire-map::before {
-  content: '';
-  position: absolute;
-  inset: 9% 13%;
-  background:
-    linear-gradient(155deg, transparent 0 22%, rgba(255, 221, 138, 0.28) 22.3% 22.8%, transparent 23.1%),
-    linear-gradient(26deg, transparent 0 31%, rgba(255, 221, 138, 0.24) 31.3% 31.8%, transparent 32.1%),
-    linear-gradient(174deg, transparent 0 45%, rgba(255, 221, 138, 0.24) 45.3% 45.8%, transparent 46.1%),
-    linear-gradient(38deg, transparent 0 62%, rgba(255, 221, 138, 0.2) 62.3% 62.8%, transparent 63.1%);
-  opacity: 0.72;
-  pointer-events: none;
+  background: linear-gradient(180deg, rgba(25, 29, 29, 0.26), rgba(11, 14, 15, 0.7));
 }
 
 .map-connections {
@@ -351,6 +356,68 @@ h2 {
   margin-left: auto;
 }
 
+.select-panel {
+  align-self: center;
+  gap: 24px;
+}
+
+.select-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.character-card {
+  min-height: 320px;
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  align-items: start;
+  gap: 18px;
+  border: 1px solid rgba(245, 241, 232, 0.22);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(12, 16, 18, 0.66);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+  text-align: left;
+}
+
+.character-card:hover,
+.character-card:focus-visible {
+  outline: 2px solid #ffdd8a;
+  outline-offset: 3px;
+}
+
+.character-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.character-copy > p {
+  color: #ddd3bf;
+  line-height: 1.45;
+}
+
+.character-copy strong {
+  color: #ffdd8a;
+  font-size: 22px;
+}
+
+.trait-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: #ddd3bf;
+}
+
+.trait-list li + li {
+  margin-top: 6px;
+}
+
 .reward-panel {
   align-self: center;
   border-radius: 8px;
@@ -391,6 +458,38 @@ h2 {
 }
 
 .relic-card p {
+  color: #ddd3bf;
+  line-height: 1.4;
+}
+
+.boon-card {
+  min-height: 210px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  border-radius: 8px;
+  padding: 18px;
+  color: #f8f3e7;
+  text-align: left;
+}
+
+.boon-card span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #17120f;
+  background: #90d4b2;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.boon-card strong {
+  align-self: end;
+  font-size: 24px;
+}
+
+.boon-card p {
   color: #ddd3bf;
   line-height: 1.4;
 }
@@ -604,12 +703,13 @@ button:disabled {
   }
 
   .map-shell,
-  .reward-shell {
+  .reward-shell,
+  .select-shell {
     padding-top: 22px;
   }
 
   .spire-map {
-    min-height: 680px;
+    min-height: 920px;
   }
 
   .map-node {
@@ -632,5 +732,14 @@ button:disabled {
 
   .reward-cards {
     grid-template-columns: 1fr;
+  }
+
+  .character-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .character-card {
+    grid-template-columns: 90px 1fr;
+    min-height: 0;
   }
 }
