@@ -337,23 +337,81 @@ h2 {
   box-shadow: 0 0 0 4px rgba(255, 221, 138, 0.22);
 }
 
+.map-sidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.map-legend,
+.map-meta {
+  border: 1px solid rgba(245, 241, 232, 0.22);
+  border-radius: 8px;
+  background: rgba(12, 16, 18, 0.64);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+}
+
 .map-legend {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  border-radius: 8px;
+  gap: 14px;
   padding: 12px;
 }
 
-.map-legend span {
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #ddd3bf;
-  font-size: 14px;
-  font-weight: 900;
 }
 
-.map-legend button {
-  margin-left: auto;
+.legend-item strong {
+  font-size: 14px;
+}
+
+.legend-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #17120f;
+  background: #ffdd8a;
+  font-size: 14px;
+}
+
+.legend-icon.fight {
+  background: #ffdd8a;
+}
+
+.legend-icon.mystery {
+  background: #d8e7e3;
+}
+
+.legend-icon.elite {
+  background: #ff8a62;
+}
+
+.legend-icon.rest {
+  background: #90d4b2;
+}
+
+.legend-icon.shop {
+  background: #e2c66e;
+}
+
+.legend-icon.boss {
+  background: #f05b4e;
+}
+
+.map-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  color: #ddd3bf;
 }
 
 .select-panel {
@@ -722,10 +780,6 @@ button:disabled {
     height: 30px;
   }
 
-  .map-node small {
-    display: none;
-  }
-
   .reward-panel {
     padding: 18px;
   }
@@ -741,5 +795,13 @@ button:disabled {
   .character-card {
     grid-template-columns: 90px 1fr;
     min-height: 0;
+  }
+
+  .map-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .map-meta {
+    justify-content: space-between;
   }
 }
