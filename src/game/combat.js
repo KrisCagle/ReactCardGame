@@ -204,7 +204,8 @@ const runRelicHook = (combat, hook, rng, ...args) =>
     return trigger ? applyEffects(current, trigger(current, ...args), rng, relic.name) : current
   }, combat)
 
-const relicAttackBonus = (combat) =>
+// Extra damage per hit from relics (e.g. Akabeko) for the next attack played.
+export const relicAttackBonus = (combat) =>
   combat.relics.reduce((total, relic) => total + (relicTriggers[relic.id]?.attackBonus?.(combat) ?? 0), 0)
 
 // Not named usePotion: the `use` prefix is reserved for React hooks.

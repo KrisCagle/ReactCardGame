@@ -75,10 +75,23 @@ Game rules live in `src/game/` as pure functions with no React in them, so they 
 - `mapGen.js` - procedural act maps (non-crossing paths plus room placement rules)
 - `gameReducer.js` - the single `useReducer` entry point the UI dispatches actions to
 - `rng.js` - seeded random numbers; the seed lives in game state, so every transition is pure and runs are reproducible
-- `cards.js` - card text generated from card effects, and upgrades
+- `cards.js` - card text generated from card effects (with live damage/block numbers in combat), and upgrades
+- `fx.js` - diffs two combat states into "what happened" events (damage, block, heals, debuffs) that the UI animates
 - `bot.js` - a heuristic auto-player used by the fuzz tests and the simulator
 
-Static content lives in `src/data/` (cards, characters, enemies, relics, potions, events). Components in `src/components/` only render state and dispatch actions.
+Static content lives in `src/data/` (cards, characters, enemies, relics, potions, events, keywords). Components in `src/components/` only render state and dispatch actions.
+
+### Art and styles
+
+- `src/art/` - all art is hand-drawn inline SVG: character portraits, 16 enemy archetypes recolored into 32 enemies, act backdrops, and an icon set. Nothing is downloaded at runtime.
+- `src/styles/` - CSS split by area (tokens, base, HUD, cards, combat, effects, map, screens). Animations respect `prefers-reduced-motion`.
+- In dev, open `http://localhost:5173/?gallery` to see every piece of art on one page.
+
+### Controls
+
+- Click a card to play it, or press `1`-`9` for the card in that position.
+- `E` ends your turn.
+- Hover cards, statuses, intents, relics, and potions for tooltips. Click the draw / discard / exhaust piles to look inside.
 
 ## Gameplay Loop
 
@@ -91,7 +104,7 @@ Static content lives in `src/data/` (cards, characters, enemies, relics, potions
 
 ## Roadmap
 
-- Visual overhaul: character and enemy art, animations, hit feedback, tooltips
-- Fights against multiple enemies at once
+- Fights against multiple enemies at once (with targeting)
+- Sound effects and music
 - Save and resume runs
 - More balance passes using the simulator

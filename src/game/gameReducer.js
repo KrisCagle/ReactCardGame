@@ -2,6 +2,7 @@
 // this reducer routes them to the pure combat and run rules.
 import { createCombat, drinkPotion, endTurn, playCard } from './combat.js'
 import { chooseEventOption, continueEvent, enterMystery, pickEventCard } from './events.js'
+import { withFx } from './fx.js'
 import { createRng, randomSeed } from './rng.js'
 import {
   applyOpeningBoon,
@@ -54,10 +55,12 @@ const enterNode = (state, nodeId, rng) => {
   }
 }
 
-// Combat can end on the player's action (a killing blow), a potion, or end turn (poison, thorns).
-const afterCombatStep = (state, combat, rng) => {
-  const run = { ...state.run, player: { ...state.run.player, hp: combat.player.hp } }
-  return combat.outcome === 'won' ? { ...state, run: winCombat(run, combat, rng), combat: null } : { ...state, combat }
+// Combat can end on the player's action (a killing blow), a potion, or end turn
+// (poison, thorns). A won fight stays on screen so the UI can play the enemy's
+// death, then the UI sends finishCombat to move on to rewards.
+const afterCombatStep = (state, combat, actionType) => {
+  if (combat === state.combat) return state
+  return { ...state, run: { ...state.run, player: { ...state.run.player, hp: combat.player.hp } }, combat: withFx(state.combat, combat, actionType) }
 }
 
 const updateRun = (state, screen, update) => {
@@ -84,17 +87,21 @@ const reduce = (state, action, rng) => {
 
     case 'playCard':
       if (!state.combat) return state
-      return afterCombatStep(state, playCard(state.combat, action.instanceId, rng), rng)
+      return afterCombatStep(state, playCard(state.combat, action.instanceId, rng), action.type)
 
     case 'endTurn':
       if (!state.combat) return state
-      return afterCombatStep(state, endTurn(state.combat, rng), rng)
+      return afterCombatStep(state, endTurn(state.combat, rng), action.type)
 
     case 'usePotion': {
       const potion = state.run.potions[action.index]
       if (!state.combat || !potion || state.combat.outcome !== 'playing') return state
-      return afterCombatStep({ ...state, run: removePotion(state.run, action.index) }, drinkPotion(state.combat, potion, rng), rng)
+      return afterCombatStep({ ...state, run: removePotion(state.run, action.index) }, drinkPotion(state.combat, potion, rng), action.type)
     }
+
+    case 'finishCombat':
+      if (state.combat?.outcome !== 'won') return state
+      return { ...state, run: winCombat(state.run, state.combat, rng), combat: null }
 
     case 'discardPotion':
       if (!state.run.potions[action.index]) return state

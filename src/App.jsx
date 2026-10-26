@@ -1,5 +1,4 @@
-import { useReducer } from 'react'
-import './App.css'
+import { useCallback, useReducer } from 'react'
 import { createInitialGameState, gameReducer } from './game/gameReducer'
 import { CharacterSelectScreen } from './components/CharacterSelectScreen'
 import { OpeningBoonScreen } from './components/OpeningBoonScreen'
@@ -15,6 +14,8 @@ function App() {
   const [{ run, combat }, dispatch] = useReducer(gameReducer, undefined, () => createInitialGameState())
   const restart = () => dispatch({ type: 'restart' })
   const discardPotion = (index) => dispatch({ type: 'discardPotion', index })
+  // Stable identity: CombatScreen schedules this after the enemy's death animation.
+  const finishCombat = useCallback(() => dispatch({ type: 'finishCombat' }), [])
 
   if (run.screen === 'characterSelect') {
     return <CharacterSelectScreen onChoose={(character) => dispatch({ type: 'chooseCharacter', character })} />
@@ -83,6 +84,7 @@ function App() {
       onEndTurn={() => dispatch({ type: 'endTurn' })}
       onPlayCard={(card) => dispatch({ type: 'playCard', instanceId: card.instanceId })}
       onUsePotion={(index) => dispatch({ type: 'usePotion', index })}
+      onFinish={finishCombat}
       onRestart={restart}
       run={run}
     />

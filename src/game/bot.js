@@ -100,6 +100,7 @@ export const nextBotAction = ({ run, combat }) => {
     case 'event':
       return chooseEventAction(run)
     case 'combat':
+      if (combat.outcome === 'won') return { type: 'finishCombat' }
       return combat.outcome === 'lost' ? null : chooseCombatAction(run, combat)
     default:
       return null

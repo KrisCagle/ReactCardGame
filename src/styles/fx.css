@@ -1,0 +1,125 @@
+/* Combat feedback: floating numbers, hit shakes, lunges, deaths. Triggered by
+   remounting .creature-art (see the fx key in CombatScreen). */
+.floaters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.floater {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  text-shadow:
+    0 2px 0 #000,
+    0 0 12px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  animation: float-up 1000ms var(--ease-out) calc(var(--i) * 140ms) both;
+}
+
+.floater-damage {
+  color: #ff5a4a;
+}
+
+.floater-heal {
+  color: var(--heal);
+}
+
+.floater-block {
+  color: var(--block);
+  font-size: 22px;
+}
+
+.floater-blocked {
+  color: #cfd8e0;
+  font-size: 22px;
+}
+
+.floater-status {
+  color: #d0a0ff;
+  font-size: 18px;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -64px) scale(1);
+  }
+}
+
+.creature-art.is-hit > svg {
+  animation:
+    hit-shake 380ms ease,
+    hit-flash 380ms ease;
+}
+
+@keyframes hit-shake {
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes hit-flash {
+  15% {
+    filter: drop-shadow(0 18px 14px rgba(0, 0, 0, 0.5)) brightness(1.6) sepia(1) hue-rotate(-40deg) saturate(5);
+  }
+}
+
+.creature-enemy .creature-art.is-attacking > svg {
+  animation: lunge-left 420ms ease;
+}
+
+@keyframes lunge-left {
+  35% {
+    transform: translateX(-48px) scale(1.04);
+  }
+}
+
+.creature.is-dying .creature-art > svg {
+  animation: enemy-death 1000ms ease forwards;
+}
+
+.creature.is-dying .creature-plate {
+  opacity: 0;
+  transition: opacity 600ms;
+}
+
+@keyframes enemy-death {
+  to {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+    filter: grayscale(1) brightness(0.4) blur(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floater,
+  .creature-art.is-hit > svg,
+  .creature-enemy .creature-art.is-attacking > svg,
+  .hand-card,
+  .hand.is-discarding .hand-card,
+  .turn-banner {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
