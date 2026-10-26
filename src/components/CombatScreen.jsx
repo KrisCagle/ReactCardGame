@@ -1,8 +1,10 @@
-import { canPlayCard, describeIntent, getEnemyIntent } from '../game/combat'
-import { CardButton, HealthBar, Stat, StatusList } from './shared'
+import { canPlayCard, describeEnemyPassive, describeIntent, getEnemyIntent } from '../game/combat'
+import { CardButton, HealthBar, PotionBelt, RelicBar, Stat, StatusList } from './shared'
 
-export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) {
+export function CombatScreen({ combat, onEndTurn, onPlayCard, onUsePotion, onRestart, run }) {
   const enemyMove = getEnemyIntent(combat)
+  const passives = describeEnemyPassive(combat.enemy)
+  const playing = combat.outcome === 'playing'
   const healthPercent = Math.round((combat.player.hp / combat.player.maxHp) * 100)
   const enemyPercent = Math.round((combat.enemy.hp / combat.enemy.maxHp) * 100)
 
@@ -15,6 +17,11 @@ export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) 
             <h1>{combat.node.label}</h1>
           </div>
           <div className="turn-pill">Turn {combat.turn}</div>
+        </div>
+
+        <div className="combat-tray">
+          <PotionBelt potions={run.potions} onUse={playing ? onUsePotion : undefined} />
+          <RelicBar relics={run.relics} />
         </div>
 
         <div className="combatants">
@@ -44,6 +51,13 @@ export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) 
               <HealthBar value={combat.enemy.hp} max={combat.enemy.maxHp} percent={enemyPercent} />
               <p>Block {combat.enemy.block}</p>
               <StatusList combatant={combat.enemy} />
+              {passives.length > 0 && (
+                <ul className="status-list" aria-label="Enemy passives">
+                  {passives.map((text) => (
+                    <li className="status-chip passive" key={text} title={text}>{text.split(':')[0]}</li>
+                  ))}
+                </ul>
+              )}
               <div className="intent">{enemyMove.intent}: {describeIntent(enemyMove, combat.enemy, combat.player)}</div>
             </div>
           </article>
@@ -60,8 +74,8 @@ export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) 
       <section className="table">
         <aside className="pile-stats" aria-label="Deck piles">
           <Stat label="Draw" value={combat.drawPile.length} />
-          <Stat label="Hand" value={combat.hand.length} />
           <Stat label="Discard" value={combat.discardPile.length} />
+          <Stat label="Exhaust" value={combat.exhaustPile.length} />
         </aside>
 
         <div className="hand" aria-label="Cards in hand">

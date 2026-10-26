@@ -1,24 +1,39 @@
-// Pure run-level rules: building a run, rewards, map progress, shops, campfires, and acts.
-import { ACT_COUNT, cardLibrary, characterRewardPools, enemies, openingBoonPool, relicLibrary, rewardPool } from '../data/gameData'
-import { canUpgrade, createDeckCard, upgradeCard } from './cards'
-import { generateMap } from './mapGen'
-import { pickOne, randomInt, takeRandom } from './rng'
+// Pure run-level rules: building a run, gold, relics, potions, rewards, shops,
+// campfires, map progress, and acts.
+import { ACT_COUNT, cardLibrary, enemiesByAct, openingBoonPool, potionLibrary, relicById } from '../data/gameData.js'
+import { canUpgrade, createDeckCard, upgradeCard } from './cards.js'
+import { generateMap } from './mapGen.js'
+import {
+  BASE_CARD_CHOICES,
+  POTION_DROP_START,
+  canGainPotion,
+  hasRelicFlag,
+  rollBossRelicChoices,
+  rollCardChoices,
+  rollPotionDrop,
+  rollRelic,
+  rollRelicChoices,
+} from './rewards.js'
+import { pickOne, randomInt, takeRandom } from './rng.js'
 
 export const STARTING_GOLD = 99
 export const REST_HEAL_PERCENT = 0.3
 export const BURNING_BLOOD_HEAL = 6
 export const GOLD_REWARDS = { fight: [10, 20], elite: [25, 35], boss: [95, 105] }
 export const SHOP_CARD_COUNT = 5
-export const SHOP_RELIC_COUNT = 2
-export const CARD_PRICE = [45, 60]
-export const RELIC_PRICE = [140, 170]
+export const SHOP_RELIC_COUNT = 3
+export const SHOP_POTION_COUNT = 3
+export const CARD_PRICES = { common: [45, 55], uncommon: [68, 82], rare: [135, 165] }
+export const RELIC_PRICES = { common: [120, 150], uncommon: [180, 220], rare: [240, 280] }
+export const POTION_PRICE = [50, 75]
 export const REMOVE_BASE_COST = 75
 export const REMOVE_COST_STEP = 25
 export const TREASURE_GOLD = [40, 60]
+const RECENT_ENEMY_MEMORY = 2
 
-const rollRange = (rng, [min, max]) => min + randomInt(rng, max - min + 1)
+export const rollRange = (rng, [min, max]) => min + randomInt(rng, max - min + 1)
 
-const createActMap = (rng, act) => generateMap(rng, act, pickOne(rng, enemies.boss).name)
+const createActMap = (rng, act) => generateMap(rng, act, pickOne(rng, enemiesByAct[act].boss).name)
 
 export const findNode = (run, nodeId) => run.map?.rows.flat().find((node) => node.id === nodeId)
 
@@ -28,6 +43,8 @@ export const createInitialRun = () => ({
   deck: [],
   nextCardId: 0,
   relics: [],
+  potions: [],
+  potionChance: POTION_DROP_START,
   gold: 0,
   cardRemovals: 0,
   player: { maxHp: 0, hp: 0 },
@@ -35,22 +52,64 @@ export const createInitialRun = () => ({
   currentNodeId: null,
   completedNodeIds: [],
   selectedPath: [],
-  rewardChoices: [],
+  recentEnemies: [],
+  seenEvents: [],
   openingChoices: [],
-  rewardKind: 'card',
-  rewardTitle: 'Choose a Card',
-  rewardSource: null,
+  rewards: null,
+  // Extra reward items owed after the current fight (e.g. an event's prize).
+  combatBonus: [],
   shop: null,
+  event: null,
   act: 1,
   message: 'Choose your champion.',
 })
 
+// --- Gold, cards, relics, potions ---
+
+export const getRunModifier = (run, key) => {
+  const characterValue = run.character?.modifiers?.[key] ?? 0
+  const relicValue = (run.relics ?? []).reduce((total, relic) => total + (relic[key] ?? 0), 0)
+  return characterValue + relicValue
+}
+
+export const hasRelic = (run, relicId) => run.relics.some((relic) => relic.id === relicId)
+
+// Gold gains respect Ectoplasm; spending always works.
+export const gainGold = (run, amount) => {
+  if (amount > 0 && hasRelicFlag(run, 'noGold')) return run
+  return { ...run, gold: Math.max(0, run.gold + amount) }
+}
+
 // Every deck card gets a unique deckId from a counter, so removing cards can never cause collisions.
-export const addCardToDeck = (run, card) => ({
+export const addCardToDeck = (run, card) =>
+  gainGold(
+    { ...run, deck: [...run.deck, createDeckCard(card, run.nextCardId)], nextCardId: run.nextCardId + 1 },
+    getRunModifier(run, 'goldPerCardAdded'),
+  )
+
+export const addRelic = (run, relic) => {
+  let next = { ...run, relics: [...run.relics, relic] }
+  if (relic.maxHpOnObtain) {
+    next = { ...next, player: { maxHp: next.player.maxHp + relic.maxHpOnObtain, hp: next.player.hp + relic.maxHpOnObtain } }
+  }
+  if (relic.goldOnObtain) next = gainGold(next, relic.goldOnObtain)
+  return next
+}
+
+export const addPotion = (run, potion) => (canGainPotion(run) ? { ...run, potions: [...run.potions, potion] } : run)
+
+export const removePotion = (run, index) => ({ ...run, potions: run.potions.filter((_, i) => i !== index) })
+
+const changeHp = (run, amount) => ({
   ...run,
-  deck: [...run.deck, createDeckCard(card, run.nextCardId)],
-  nextCardId: run.nextCardId + 1,
+  // Events and card costs can hurt, but never kill outside of combat.
+  player: { ...run.player, hp: Math.max(1, Math.min(run.player.maxHp, run.player.hp + amount)) },
 })
+
+export const healRun = (run, amount) => changeHp(run, amount)
+export const hurtRun = (run, amount) => changeHp(run, -amount)
+
+// --- Run setup ---
 
 export const createRunFromCharacter = (character, rng) => {
   const base = {
@@ -76,28 +135,19 @@ const addCharacterModifier = (run, key) => ({
 })
 
 export const applyOpeningBoon = (run, boon) => {
-  if (boon.kind === 'relic') {
-    const relic = relicLibrary.find((item) => item.id === boon.relicId)
-    return { ...run, relics: [...run.relics, relic] }
-  }
+  if (boon.kind === 'relic') return addRelic(run, relicById[boon.relicId])
   if (boon.kind === 'card') return addCardToDeck(run, cardLibrary[boon.cardId])
   if (boon.effect === 'maxHp') {
     return { ...run, player: { maxHp: run.player.maxHp + 10, hp: run.player.hp + 10 } }
   }
-  if (boon.effect === 'gold') return { ...run, gold: run.gold + 100 }
+  if (boon.effect === 'gold') return gainGold(run, 100)
   if (boon.effect === 'startingDraw' || boon.effect === 'rewardChoicesBonus') {
     return addCharacterModifier(run, boon.effect)
   }
   return run
 }
 
-export const getRunModifier = (run, key) => {
-  const characterValue = run.character?.modifiers?.[key] ?? 0
-  const relicValue = (run.relics ?? []).reduce((total, relic) => total + (relic[key] ?? 0), 0)
-  return characterValue + relicValue
-}
-
-export const hasRelic = (run, relicId) => run.relics.some((relic) => relic.id === relicId)
+// --- Map and combat setup ---
 
 export const getAvailableNodeIds = (run) => {
   if (!run.map) return []
@@ -111,25 +161,11 @@ export const getCombatSetup = (run, node) => ({
   relics: run.relics,
   startingDraw: getRunModifier(run, 'startingDraw'),
   node,
-  rowIndex: node.floor ?? 0,
   act: run.act,
+  avoidEnemies: run.recentEnemies,
 })
 
-export const getRewardCount = (run, base) => base + getRunModifier(run, 'rewardChoicesBonus')
-
-const uniqueById = (items) => [...new Map(items.map((item) => [item.id, item])).values()]
-
-// The shared pool and character pools overlap, so dedupe before drawing -
-// otherwise one reward screen can offer the same card twice.
-export const getCardRewardPool = (run) => uniqueById([...rewardPool, ...(characterRewardPools[run.character?.id] ?? [])])
-
-export const getCardRewardChoices = (run, baseCount, rng) =>
-  takeRandom(rng, getCardRewardPool(run), getRewardCount(run, baseCount))
-
-export const getRelicChoices = (run, count, rng) => {
-  const unowned = relicLibrary.filter((relic) => !hasRelic(run, relic.id))
-  return takeRandom(rng, unowned, count)
-}
+export const rememberEnemy = (run, enemyName) => ({ ...run, recentEnemies: [enemyName, ...run.recentEnemies].slice(0, RECENT_ENEMY_MEMORY) })
 
 // Marks a node as visited. Combats only count as completed once won.
 export const visitNode = (run, node, { completed = true } = {}) => ({
@@ -139,21 +175,68 @@ export const visitNode = (run, node, { completed = true } = {}) => ({
   completedNodeIds: completed ? [...run.completedNodeIds, node.id] : run.completedNodeIds,
 })
 
-export const offerReward = (run, { kind, title, source, choices, message }) => ({
-  ...run,
-  screen: 'reward',
-  rewardKind: kind,
-  rewardTitle: title,
-  rewardSource: source,
-  rewardChoices: choices,
-  message,
-})
+export const returnToMap = (run, message) => ({ ...run, screen: 'map', shop: null, event: null, rewards: null, message })
 
-export const returnToMap = (run, message) => ({ ...run, screen: 'map', shop: null, message })
+// --- Rewards ---
+
+export const getRewardCount = (run, base = BASE_CARD_CHOICES) => Math.max(1, base + getRunModifier(run, 'rewardChoicesBonus'))
+
+export const getCardRewardChoices = (run, source, rng, options) => rollCardChoices(run, getRewardCount(run), source, rng, options)
+
+const cardReward = (run, source, rng, options) => ({ type: 'card', choices: getCardRewardChoices(run, source, rng, options) })
+
+// items: [{ type: 'card', choices } | { type: 'relic', relic } | { type: 'relicChoice', choices } | { type: 'potion', potion }]
+// then: 'map' | 'nextAct'
+export const offerRewards = (run, { title, message, items, then = 'map' }, rng) => {
+  const usable = items.filter((item) => (item.choices ? item.choices.length > 0 : item.relic || item.potion))
+  const rewards = { title, message, then, items: usable.map((item, index) => ({ ...item, id: `reward-${index}` })) }
+  if (rewards.items.length === 0) return leaveRewards({ ...run, rewards }, rng)
+  return { ...run, screen: 'reward', rewards, message }
+}
+
+export const leaveRewards = (run, rng) => {
+  const then = run.rewards?.then ?? 'map'
+  if (then !== 'nextAct') return returnToMap(run, 'Choose your next room.')
+
+  const act = run.act + 1
+  return returnToMap(
+    { ...run, act, map: createActMap(rng, act), currentNodeId: null, completedNodeIds: [], selectedPath: [], recentEnemies: [] },
+    `Act ${act} begins. Choose your first room.`,
+  )
+}
+
+export const claimReward = (run, itemId, choiceId, rng) => {
+  const item = run.rewards?.items.find((entry) => entry.id === itemId)
+  if (!item) return run
+
+  let next = run
+  if (item.type === 'card') {
+    const card = item.choices.find((choice) => choice.id === choiceId)
+    if (!card) return run
+    next = addCardToDeck(run, card)
+  } else if (item.type === 'relicChoice') {
+    const relic = item.choices.find((choice) => choice.id === choiceId)
+    if (!relic) return run
+    next = addRelic(run, relic)
+  } else if (item.type === 'relic') {
+    next = addRelic(run, item.relic)
+  } else if (item.type === 'potion') {
+    if (!canGainPotion(run)) return run
+    next = addPotion(run, item.potion)
+  }
+
+  const items = next.rewards.items.filter((entry) => entry.id !== itemId)
+  next = { ...next, rewards: { ...next.rewards, items } }
+  return items.length ? next : leaveRewards(next, rng)
+}
 
 // --- Campfire ---
 
-export const getRestHealAmount = (run) => Math.min(run.player.maxHp - run.player.hp, Math.floor(run.player.maxHp * REST_HEAL_PERCENT))
+export const canRest = (run) => !hasRelicFlag(run, 'noRest')
+export const canSmith = (run) => !hasRelicFlag(run, 'noSmith') && run.deck.some(canUpgrade)
+
+export const getRestHealAmount = (run) =>
+  Math.min(run.player.maxHp - run.player.hp, Math.floor(run.player.maxHp * REST_HEAL_PERCENT) + getRunModifier(run, 'restHealBonus'))
 
 export const enterRest = (run, node) => ({
   ...visitNode(run, node),
@@ -162,30 +245,36 @@ export const enterRest = (run, node) => ({
 })
 
 export const restHeal = (run) => {
+  if (!canRest(run)) return run
   const healed = getRestHealAmount(run)
-  return returnToMap({ ...run, player: { ...run.player, hp: run.player.hp + healed } }, `You rest and recover ${healed} HP.`)
+  return returnToMap(healRun(run, healed), `You rest and recover ${healed} HP.`)
 }
 
 export const smithCard = (run, deckId) => {
   const card = run.deck.find((item) => item.deckId === deckId)
-  if (!card || !canUpgrade(card)) return run
-  const upgraded = upgradeCard(card)
-  return returnToMap(
-    { ...run, deck: run.deck.map((item) => (item.deckId === deckId ? upgraded : item)) },
-    `${card.name} becomes ${upgraded.name}.`,
-  )
+  if (!card || !canUpgrade(card) || hasRelicFlag(run, 'noSmith')) return run
+  return returnToMap(upgradeDeckCard(run, deckId), `${card.name} becomes ${upgradeCard(card).name}.`)
 }
+
+export const upgradeDeckCard = (run, deckId) => ({ ...run, deck: run.deck.map((item) => (item.deckId === deckId ? upgradeCard(item) : item)) })
+
+export const removeDeckCard = (run, deckId) => ({ ...run, deck: run.deck.filter((item) => item.deckId !== deckId) })
 
 // --- Shop ---
 
-export const getRemoveCost = (run) => REMOVE_BASE_COST + run.cardRemovals * REMOVE_COST_STEP
+export const getRemoveCost = (run) => applyDiscount(run, REMOVE_BASE_COST + run.cardRemovals * REMOVE_COST_STEP)
+
+const applyDiscount = (run, price) => Math.round(price * (1 - getRunModifier(run, 'shopDiscount')))
+
+const priceFor = (run, rng, ranges, rarity) => applyDiscount(run, rollRange(rng, ranges[rarity] ?? ranges.common))
 
 export const enterShop = (run, node, rng) => ({
   ...visitNode(run, node),
   screen: 'shop',
   shop: {
-    cards: takeRandom(rng, getCardRewardPool(run), SHOP_CARD_COUNT).map((card) => ({ item: card, price: rollRange(rng, CARD_PRICE), sold: false })),
-    relics: getRelicChoices(run, SHOP_RELIC_COUNT, rng).map((relic) => ({ item: relic, price: rollRange(rng, RELIC_PRICE), sold: false })),
+    cards: rollCardChoices(run, SHOP_CARD_COUNT, 'shop', rng).map((card) => ({ item: card, price: priceFor(run, rng, CARD_PRICES, card.rarity), sold: false })),
+    relics: rollRelicChoices(run, SHOP_RELIC_COUNT, rng).map((relic) => ({ item: relic, price: priceFor(run, rng, RELIC_PRICES, relic.rarity), sold: false })),
+    potions: takeRandom(rng, potionLibrary, SHOP_POTION_COUNT).map((potion) => ({ item: potion, price: applyDiscount(run, rollRange(rng, POTION_PRICE)), sold: false })),
     removeUsed: false,
   },
   message: 'The merchant spreads out their wares.',
@@ -195,27 +284,16 @@ const markSold = (offers, index) => offers.map((offer, i) => (i === index ? { ..
 
 const canBuy = (run, offer) => Boolean(offer) && !offer.sold && run.gold >= offer.price
 
-export const buyShopCard = (run, index) => {
-  const offer = run.shop?.cards[index]
+// kind: 'cards' | 'relics' | 'potions'
+export const buyShopItem = (run, kind, index) => {
+  const offer = run.shop?.[kind]?.[index]
   if (!canBuy(run, offer)) return run
-  return {
-    ...addCardToDeck(run, offer.item),
-    gold: run.gold - offer.price,
-    shop: { ...run.shop, cards: markSold(run.shop.cards, index) },
-    message: `${offer.item.name} added to your deck.`,
-  }
-}
+  if (kind === 'potions' && !canGainPotion(run)) return run
 
-export const buyShopRelic = (run, index) => {
-  const offer = run.shop?.relics[index]
-  if (!canBuy(run, offer)) return run
-  return {
-    ...run,
-    relics: [...run.relics, offer.item],
-    gold: run.gold - offer.price,
-    shop: { ...run.shop, relics: markSold(run.shop.relics, index) },
-    message: `${offer.item.name} acquired.`,
-  }
+  const paid = { ...run, gold: run.gold - offer.price, shop: { ...run.shop, [kind]: markSold(run.shop[kind], index) } }
+  if (kind === 'cards') return { ...addCardToDeck(paid, offer.item), message: `${offer.item.name} added to your deck.` }
+  if (kind === 'relics') return { ...addRelic(paid, offer.item), message: `${offer.item.name} acquired.` }
+  return { ...addPotion(paid, offer.item), message: `${offer.item.name} bought.` }
 }
 
 export const removeCardAtShop = (run, deckId) => {
@@ -223,8 +301,7 @@ export const removeCardAtShop = (run, deckId) => {
   const card = run.deck.find((item) => item.deckId === deckId)
   if (!run.shop || run.shop.removeUsed || !card || run.gold < cost) return run
   return {
-    ...run,
-    deck: run.deck.filter((item) => item.deckId !== deckId),
+    ...removeDeckCard(run, deckId),
     gold: run.gold - cost,
     cardRemovals: run.cardRemovals + 1,
     shop: { ...run.shop, removeUsed: true },
@@ -236,72 +313,49 @@ export const removeCardAtShop = (run, deckId) => {
 
 export const openTreasure = (run, node, rng) => {
   const gold = rollRange(rng, TREASURE_GOLD)
-  const visited = { ...visitNode(run, node), gold: run.gold + gold }
-  const relics = getRelicChoices(run, 1, rng)
-  if (relics.length === 0) return returnToMap(visited, `The chest holds ${gold} gold.`)
-  return offerReward(visited, {
-    kind: 'relic',
-    title: 'Treasure Chest',
-    source: 'treasure',
-    choices: relics,
-    message: `The chest holds ${gold} gold and a relic.`,
-  })
+  const visited = gainGold(visitNode(run, node), gold)
+  return offerRewards(visited, { title: 'Treasure Chest', message: `The chest holds ${gold} gold.`, items: [{ type: 'relic', relic: rollRelic(run, rng) }] }, rng)
 }
 
-// --- Combat results and rewards ---
+// --- Combat results ---
 
 export const winCombat = (run, combat, rng) => {
   const { node } = combat
   const isEliteOrBoss = node.type === 'elite' || node.type === 'boss'
-  const relicHeal = isEliteOrBoss && hasRelic(run, 'burning-blood') ? BURNING_BLOOD_HEAL : 0
-  const hp = Math.min(run.player.maxHp, combat.player.hp + getRunModifier(run, 'healAfterFight') + relicHeal)
+  let hp = combat.player.hp + getRunModifier(run, 'healAfterFight')
+  if (isEliteOrBoss && hasRelic(run, 'burning-blood')) hp += BURNING_BLOOD_HEAL
+  if (combat.player.hp <= run.player.maxHp / 2) hp += getRunModifier(run, 'lowHpHeal')
+
   const gold = rollRange(rng, GOLD_REWARDS[node.type] ?? GOLD_REWARDS.fight)
-  const won = {
-    ...run,
-    player: { ...run.player, hp },
-    gold: run.gold + gold,
-    completedNodeIds: [...run.completedNodeIds, node.id],
-  }
+  const won = gainGold(
+    { ...run, player: { ...run.player, hp: Math.min(run.player.maxHp, hp) }, completedNodeIds: [...run.completedNodeIds, node.id], combatBonus: [] },
+    gold,
+  )
 
   if (node.type === 'boss' && run.act >= ACT_COUNT) {
     return { ...won, screen: 'victory', message: `${run.character.name} conquers the climb.` }
   }
 
-  if (isEliteOrBoss) {
-    return offerReward(won, {
-      kind: 'relic',
-      title: 'Claim a Relic',
-      source: node.type,
-      choices: getRelicChoices(run, 3, rng),
-      message: `+${gold} gold. ${node.type === 'boss' ? 'The boss falls. Claim a relic and climb again.' : 'The elite drops a relic.'}`,
-    })
-  }
+  const { potion, potionChance } = rollPotionDrop(run, rng)
+  // Relics already promised by this fight (an event prize) can't be rolled again.
+  const promised = run.combatBonus.filter((item) => item.relic).map((item) => item.relic)
+  const items = [
+    node.type === 'boss' ? cardReward(run, 'elite', rng, { rarity: 'rare' }) : cardReward(run, isEliteOrBoss ? 'elite' : 'fight', rng),
+    node.type === 'elite' && { type: 'relic', relic: rollRelic({ ...run, relics: [...run.relics, ...promised] }, rng) },
+    node.type === 'boss' && { type: 'relicChoice', choices: rollBossRelicChoices(run, 3, rng) },
+    potion && { type: 'potion', potion },
+    ...run.combatBonus,
+  ].filter(Boolean)
 
-  return offerReward(won, {
-    kind: 'card',
-    title: 'Choose a Card',
-    source: node.type,
-    choices: getCardRewardChoices(run, 4, rng),
-    message: `+${gold} gold. Choose one card for your deck.`,
-  })
-}
-
-// Leaves the reward screen; after a boss reward the next act begins on a fresh map.
-export const leaveReward = (run, message, rng) => {
-  const cleared = { ...run, rewardChoices: [], rewardKind: 'card', rewardTitle: 'Choose a Card', rewardSource: null }
-
-  if (run.rewardSource !== 'boss') return returnToMap(cleared, `${message} Choose your next room.`)
-
-  const act = run.act + 1
-  return returnToMap(
-    { ...cleared, act, map: createActMap(rng, act), currentNodeId: null, completedNodeIds: [], selectedPath: [] },
-    `${message} Act ${act} begins. Choose your first room.`,
+  const goldText = hasRelicFlag(run, 'noGold') ? '' : `+${gold} gold. `
+  return offerRewards(
+    { ...won, potionChance },
+    {
+      title: node.type === 'boss' ? 'Boss Defeated' : 'Victory',
+      message: `${goldText}${node.type === 'boss' ? 'Claim your spoils, then climb on.' : 'Claim your rewards.'}`,
+      items,
+      then: node.type === 'boss' ? 'nextAct' : 'map',
+    },
+    rng,
   )
-}
-
-export const takeReward = (run, reward, rng) => {
-  if (run.rewardKind === 'relic') {
-    return leaveReward({ ...run, relics: [...run.relics, reward] }, `${reward.name} claimed.`, rng)
-  }
-  return leaveReward(addCardToDeck(run, reward), `${reward.name} added.`, rng)
 }

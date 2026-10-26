@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { cardLibrary } from '../data/gameData'
+import { cardLibrary, enemiesByAct, potionLibrary, relicById } from '../data/gameData'
 import {
   MAX_HAND_SIZE,
   calculateAttackDamage,
   calculateBlock,
-  describeIntent,
+  canPlayCard,
   countCombatCards,
   createCombat,
+  createEnemy,
+  describeIntent,
   drawCards,
+  drinkPotion,
   endTurn,
+  getEnemyPool,
   playCard,
 } from './combat'
 import { createCombatCard } from './cards'
@@ -16,13 +20,25 @@ import { createRng } from './rng'
 
 const node = { id: 'test-node', type: 'fight', label: 'Test Room' }
 
-const makeCombat = (deck, overrides = {}) => {
-  const combat = createCombat({ deck, player: { hp: 50, maxHp: 50 }, node }, createRng(1))
+// A plain, predictable enemy so tests don't depend on which enemy the pool rolls.
+const testEnemy = {
+  pattern: 'cycle',
+  moves: [{ intent: 'Chomp', damage: 10 }],
+  moveIndex: 0,
+  moveHistory: [0],
+  thorns: 0,
+  enrage: 0,
+  metallicize: 0,
+  ritual: 0,
+}
+
+const makeCombat = (deck, overrides = {}, setup = {}) => {
+  const combat = createCombat({ deck, player: { hp: 50, maxHp: 50 }, node, ...setup }, createRng(1))
   return {
     ...combat,
     ...overrides,
     player: { ...combat.player, ...overrides.player },
-    enemy: { ...combat.enemy, ...overrides.enemy },
+    enemy: { ...combat.enemy, ...testEnemy, ...overrides.enemy },
   }
 }
 
@@ -179,7 +195,7 @@ describe('endTurn', () => {
   it('discards the hand, resolves the enemy move against block, and starts a new turn', () => {
     const combat = makeCombat(strikes(10), {
       player: { block: 4, energy: 0 },
-      enemy: { moves: [attackMove], moveIndex: 0 },
+      enemy: { moves: [attackMove, { intent: 'Rest', block: 5 }], moveIndex: 0 },
     })
     const next = endTurn(combat, createRng(5))
     expect(next.player.hp).toBe(50 - 6)
@@ -244,5 +260,170 @@ describe('describeIntent', () => {
     const enemy = { strength: 2, weak: 0, vulnerable: 0 }
     const player = { strength: 0, weak: 0, vulnerable: 1 }
     expect(describeIntent({ damage: 10, vulnerable: 2 }, enemy, player)).toBe('18 damage, 2 vulnerable')
+    expect(describeIntent({ damage: 2, hits: 6 }, { strength: 1 }, { vulnerable: 0 })).toBe('3x6 damage')
+  })
+})
+
+describe('enemies', () => {
+  it('uses the weak pool on early floors and the strong pool later', () => {
+    const weakNames = enemiesByAct[1].weak.map((enemy) => enemy.name)
+    const strongNames = enemiesByAct[1].strong.map((enemy) => enemy.name)
+    for (let seed = 0; seed < 20; seed += 1) {
+      expect(weakNames).toContain(createEnemy({ nodeType: 'fight', act: 1, floor: 0 }, createRng(seed)).name)
+      expect(strongNames).toContain(createEnemy({ nodeType: 'fight', act: 1, floor: 6 }, createRng(seed)).name)
+    }
+    expect(getEnemyPool('elite', 2)).toBe(enemiesByAct[2].elite)
+  })
+
+  it('avoids enemies the player just fought', () => {
+    const avoid = enemiesByAct[1].weak.slice(1).map((enemy) => enemy.name)
+    for (let seed = 0; seed < 20; seed += 1) {
+      expect(createEnemy({ nodeType: 'fight', act: 1, floor: 0, avoid }, createRng(seed)).name).toBe(enemiesByAct[1].weak[0].name)
+    }
+  })
+
+  it('never uses the same random move three times in a row', () => {
+    let combat = makeCombat(strikes(10), {
+      player: { hp: 999, maxHp: 999 },
+      enemy: { pattern: 'random', moves: [{ intent: 'A', block: 1, weight: 100 }, { intent: 'B', block: 1, weight: 1 }] },
+    })
+    const used = []
+    for (let i = 0; i < 30; i += 1) {
+      used.push(combat.enemy.moveIndex)
+      combat = endTurn(combat, createRng(100 + i))
+    }
+    used.forEach((index, i) => {
+      if (i >= 2) expect(index === used[i - 1] && index === used[i - 2]).toBe(false)
+    })
+  })
+
+  it('hits multiple times with multi-hit attacks, each hit blocked separately', () => {
+    const combat = makeCombat(strikes(10), { player: { block: 5 }, enemy: { moves: [{ intent: 'Peck', damage: 3, hits: 4 }] } })
+    expect(endTurn(combat, createRng(1)).player.hp).toBe(50 - 7)
+  })
+
+  it('thorns damage the player for each hit they land', () => {
+    const combat = withHand(makeCombat(strikes(5), { enemy: { thorns: 3, hp: 60 } }), [cardLibrary.twinStrike])
+    expect(playCard(combat, combat.hand[0].instanceId, createRng(1)).player.hp).toBe(50 - 6)
+  })
+
+  it('enrage grants strength when the player plays a skill', () => {
+    const combat = withHand(makeCombat(strikes(5), { enemy: { enrage: 2 } }), [cardLibrary.guard])
+    expect(playCard(combat, combat.hand[0].instanceId, createRng(1)).enemy.strength).toBe(2)
+  })
+
+  it('metallicize and ritual trigger at the end of the enemy turn', () => {
+    const combat = makeCombat(strikes(10), { enemy: { metallicize: 4, ritual: 2, moves: [{ intent: 'Wait', block: 1 }] } })
+    expect(endTurn(combat, createRng(1)).enemy).toMatchObject({ block: 5, strength: 2 })
+  })
+
+  it('ritual gained from a move starts paying out the following turn', () => {
+    const combat = makeCombat(strikes(10), { enemy: { moves: [{ intent: 'Incantation', ritualGain: 3 }, { intent: 'Strike', damage: 6 }] } })
+    const first = endTurn(combat, createRng(1))
+    expect(first.enemy).toMatchObject({ ritual: 3, strength: 0 })
+    expect(endTurn(first, createRng(2)).enemy.strength).toBe(3)
+  })
+})
+
+describe('card mechanics', () => {
+  it('exhausts cards with Exhaust instead of discarding them', () => {
+    const combat = withHand(makeCombat(strikes(5)), [cardLibrary.adrenaline])
+    const next = playCard(combat, combat.hand[0].instanceId, createRng(1))
+    expect(next.exhaustPile.map((card) => card.id)).toEqual(['adrenaline'])
+    expect(next.discardPile).toHaveLength(0)
+  })
+
+  it('pays HP costs', () => {
+    const combat = withHand(makeCombat(strikes(5)), [cardLibrary.offering])
+    const next = playCard(combat, combat.hand[0].instanceId, createRng(1))
+    expect(next.player).toMatchObject({ hp: 44, energy: 5 })
+  })
+
+  it('multiplies poison', () => {
+    const combat = withHand(makeCombat(strikes(5), { enemy: { poison: 4 } }), [cardLibrary.catalyst])
+    expect(playCard(combat, combat.hand[0].instanceId, createRng(1)).enemy.poison).toBe(8)
+  })
+
+  it('applies per-turn powers at the start of each turn', () => {
+    const combat = withHand(makeCombat(strikes(10), { player: { energy: 10 } }), [cardLibrary.demonForm, cardLibrary.noxiousFumes, cardLibrary.overcharge])
+    let next = combat
+    while (next.hand.length) next = playCard(next, next.hand[0].instanceId, createRng(1))
+    next = endTurn(next, createRng(2))
+    expect(next.player).toMatchObject({ strength: 2, energy: 4 })
+    expect(next.enemy.poison).toBe(2)
+  })
+
+  it("doesn't let curses be played", () => {
+    const combat = withHand(makeCombat(strikes(5)), [cardLibrary.doubt])
+    expect(canPlayCard(combat, combat.hand[0])).toBe(false)
+  })
+})
+
+describe('relic triggers', () => {
+  const relicCombat = (ids, overrides) => makeCombat(strikes(10), overrides, { relics: ids.map((id) => relicById[id]) })
+
+  it('applies combat-start relics', () => {
+    const combat = createCombat({ deck: strikes(10), player: { hp: 50, maxHp: 50 }, node, relics: [relicById['bag-of-marbles'], relicById['hex-mask']] }, createRng(1))
+    expect(combat.enemy).toMatchObject({ vulnerable: 1, weak: 1 })
+  })
+
+  it('Horn Cleat gives block on turn 2 and Happy Flower energy on turn 3', () => {
+    let combat = relicCombat(['horn-cleat', 'happy-flower'])
+    combat = endTurn(combat, createRng(1))
+    expect(combat.player.block).toBe(14)
+    combat = endTurn({ ...combat, player: { ...combat.player, hp: 50 } }, createRng(2))
+    expect(combat.player.energy).toBe(4)
+  })
+
+  it('Orichalcum gives block when ending a turn with none', () => {
+    const combat = relicCombat(['orichalcum'], { enemy: { moves: [{ intent: 'Chomp', damage: 10 }] } })
+    expect(endTurn(combat, createRng(1)).player.hp).toBe(50 - 4)
+  })
+
+  it('Shuriken grants strength on every third attack in a turn', () => {
+    let combat = withHand(relicCombat(['shuriken'], { player: { energy: 3 }, enemy: { hp: 99 } }), [cardLibrary.strike, cardLibrary.strike, cardLibrary.strike])
+    while (combat.hand.length) combat = playCard(combat, combat.hand[0].instanceId, createRng(1))
+    expect(combat.player.strength).toBe(1)
+  })
+
+  it('Akabeko boosts only the first attack of the combat', () => {
+    let combat = withHand(relicCombat(['akabeko'], { enemy: { hp: 99 } }), [cardLibrary.strike, cardLibrary.strike])
+    combat = playCard(combat, combat.hand[0].instanceId, createRng(1))
+    expect(combat.enemy.hp).toBe(99 - 14)
+    combat = playCard(combat, combat.hand[0].instanceId, createRng(1))
+    expect(combat.enemy.hp).toBe(99 - 14 - 6)
+  })
+
+  it('Mercury Hourglass can finish an enemy at the start of a turn', () => {
+    const combat = relicCombat(['mercury-hourglass'], { enemy: { hp: 2, moves: [{ intent: 'Wait', block: 0 }] } })
+    expect(endTurn(combat, createRng(1)).outcome).toBe('won')
+  })
+
+  it('Bronze Scales deals damage back when attacked', () => {
+    const combat = relicCombat(['bronze-scales'], { enemy: { hp: 30, moves: [{ intent: 'Peck', damage: 1, hits: 3 }] } })
+    expect(endTurn(combat, createRng(1)).enemy.hp).toBe(30 - 9)
+  })
+
+  it('boss relics raise max energy every turn', () => {
+    const combat = relicCombat(['coffee-dripper'])
+    expect(combat.player.maxEnergy).toBe(4)
+    expect(endTurn(combat, createRng(1)).player.energy).toBe(4)
+  })
+})
+
+describe('potions', () => {
+  const potion = (id) => potionLibrary.find((item) => item.id === id)
+
+  it('applies potion effects', () => {
+    const combat = makeCombat(strikes(5), { enemy: { hp: 40 } })
+    expect(drinkPotion(combat, potion('fire-potion'), createRng(1)).enemy.hp).toBe(20)
+    expect(drinkPotion(combat, potion('block-potion'), createRng(1)).player.block).toBe(combat.player.block + 12)
+    expect(drinkPotion(combat, potion('poison-potion'), createRng(1)).enemy.poison).toBe(6)
+    expect(drinkPotion({ ...combat, player: { ...combat.player, hp: 10 } }, potion('blood-potion'), createRng(1)).player.hp).toBe(20)
+  })
+
+  it('can win the fight', () => {
+    const combat = makeCombat(strikes(5), { enemy: { hp: 15 } })
+    expect(drinkPotion(combat, potion('fire-potion'), createRng(1)).outcome).toBe('won')
   })
 })

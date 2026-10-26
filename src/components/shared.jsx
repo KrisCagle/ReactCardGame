@@ -1,18 +1,79 @@
+import { useState } from 'react'
+import { POTION_SLOTS } from '../data/gameData'
 import { describeCard } from '../game/cards'
+
+const showRarity = (rarity) => rarity === 'uncommon' || rarity === 'rare'
 
 export function CardButton({ card, disabled = false, onClick }) {
   return (
     <button
-      className={`card ${card.type.toLowerCase()} ${card.upgraded ? 'upgraded' : ''}`}
+      className={`card ${card.type.toLowerCase()} rarity-${card.rarity ?? 'common'} ${card.upgraded ? 'upgraded' : ''}`}
       disabled={disabled}
       onClick={onClick}
       type="button"
     >
-      <span className="cost">{card.cost}</span>
+      <span className="cost">{card.unplayable ? '-' : card.cost}</span>
       <strong>{card.name}</strong>
-      <small>{card.type}</small>
+      <small>
+        {card.type}
+        {showRarity(card.rarity) && ` - ${card.rarity}`}
+      </small>
       <p>{describeCard(card)}</p>
     </button>
+  )
+}
+
+// Compact relic chips with the description on hover / long-press.
+export function RelicBar({ relics }) {
+  return (
+    <ul className="relic-bar" aria-label="Relics">
+      {relics.map((relic) => (
+        <li className={`relic-chip rarity-${relic.rarity}`} key={relic.id} title={`${relic.name}: ${relic.text}`} tabIndex={0}>
+          {relic.name}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function PotionBelt({ potions, onUse, onDiscard }) {
+  const slots = Array.from({ length: POTION_SLOTS }, (_, index) => potions[index] ?? null)
+  return (
+    <div className="potion-belt" aria-label="Potions">
+      {slots.map((potion, index) =>
+        potion ? (
+          <div className="potion-slot filled" key={`${potion.id}-${index}`} title={`${potion.name}: ${potion.text}`}>
+            <button className="potion-use" disabled={!onUse} onClick={() => onUse?.(index)} type="button">
+              {potion.name}
+            </button>
+            {onDiscard && (
+              <button aria-label={`Discard ${potion.name}`} className="potion-discard" onClick={() => onDiscard(index)} type="button">
+                x
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="potion-slot empty" key={`empty-${index}`}>Empty</div>
+        ),
+      )}
+    </div>
+  )
+}
+
+// The StS-style top bar shown outside combat: HP, gold, potions, deck, relics.
+export function RunHeader({ run, onDiscardPotion }) {
+  const [showDeck, setShowDeck] = useState(false)
+  return (
+    <div className="run-header">
+      <div className="run-stats">
+        <span className="turn-pill">HP {run.player.hp}/{run.player.maxHp}</span>
+        <span className="turn-pill gold">Gold {run.gold}</span>
+        <button className="turn-pill" onClick={() => setShowDeck(true)} type="button">Deck {run.deck.length}</button>
+      </div>
+      <PotionBelt potions={run.potions} onDiscard={onDiscardPotion} />
+      <RelicBar relics={run.relics} />
+      {showDeck && <DeckPicker cards={run.deck} title="Your Deck" onClose={() => setShowDeck(false)} />}
+    </div>
   )
 }
 
@@ -83,7 +144,7 @@ export function StatusList({ combatant }) {
 
 // Modal list of deck cards. With onPick, cards are clickable (upgrade/remove);
 // without it, it's a read-only deck viewer.
-export function DeckPicker({ cards, title, subtitle, onPick, onClose, renderCaption }) {
+export function DeckPicker({ cards, title, subtitle, onPick, onClose, renderCaption, isPickable = () => true }) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
       <section className="modal-panel">
@@ -92,7 +153,7 @@ export function DeckPicker({ cards, title, subtitle, onPick, onClose, renderCapt
             <h2>{title}</h2>
             {subtitle && <p className="run-message">{subtitle}</p>}
           </div>
-          <button onClick={onClose} type="button">Close</button>
+          {onClose && <button onClick={onClose} type="button">Close</button>}
         </div>
         {cards.length === 0 ? (
           <p className="run-message">No cards to show.</p>
@@ -100,7 +161,7 @@ export function DeckPicker({ cards, title, subtitle, onPick, onClose, renderCapt
           <div className="deck-grid">
             {cards.map((card) => (
               <div className="deck-entry" key={card.deckId}>
-                <CardButton card={card} disabled={!onPick} onClick={() => onPick?.(card)} />
+                <CardButton card={card} disabled={!onPick || !isPickable(card)} onClick={() => onPick?.(card)} />
                 {renderCaption && <p className="deck-caption">{renderCaption(card)}</p>}
               </div>
             ))}

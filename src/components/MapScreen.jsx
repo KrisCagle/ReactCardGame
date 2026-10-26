@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { nodeIcons } from '../data/gameData'
+import { actNames, nodeIcons } from '../data/gameData'
 import { getAvailableNodeIds } from '../game/runState'
-import { DeckPicker, LegendItem } from './shared'
+import { LegendItem, RunHeader } from './shared'
 
 const rowY = (rowIndex, rowCount) => 100 - ((rowIndex + 0.5) / rowCount) * 100
 
@@ -33,26 +32,20 @@ function MapConnections({ rows }) {
   )
 }
 
-export function MapScreen({ run, onPickNode, onRestart }) {
-  const [showDeck, setShowDeck] = useState(false)
+export function MapScreen({ run, onPickNode, onRestart, onDiscardPotion }) {
   const availableNodeIds = getAvailableNodeIds(run)
   const { rows } = run.map
 
   return (
     <main className="game-shell map-shell">
       <section className="map-panel">
-        <div className="status-strip">
-          <div>
-            <p className="eyebrow">Act {run.act}</p>
-            <h1>{run.character.name} on Ember Road</h1>
-            <p className="run-message">{run.message}</p>
-          </div>
-          <div className="run-stats">
-            <span className="turn-pill">HP {run.player.hp}/{run.player.maxHp}</span>
-            <span className="turn-pill gold">Gold {run.gold}</span>
-            <button className="turn-pill" onClick={() => setShowDeck(true)} type="button">Deck {run.deck.length}</button>
-          </div>
+        <div>
+          <p className="eyebrow">Act {run.act}</p>
+          <h1>{run.character.name} on {actNames[run.act]}</h1>
+          <p className="run-message">{run.message}</p>
         </div>
+
+        <RunHeader run={run} onDiscardPotion={onDiscardPotion} />
 
         <div className="spire-map" aria-label="Map">
           <MapConnections rows={rows} />
@@ -92,13 +85,10 @@ export function MapScreen({ run, onPickNode, onRestart }) {
             <LegendItem icon="B" label="Boss" tone="boss" />
           </div>
           <div className="map-meta">
-            <span title={run.relics.map((relic) => `${relic.name}: ${relic.text}`).join('\n')}>Relics {run.relics.length}</span>
             <button onClick={onRestart} type="button">Restart run</button>
           </div>
         </div>
       </section>
-
-      {showDeck && <DeckPicker cards={run.deck} title="Your Deck" onClose={() => setShowDeck(false)} />}
     </main>
   )
 }

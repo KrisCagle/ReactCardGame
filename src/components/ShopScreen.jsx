@@ -1,34 +1,35 @@
 import { useState } from 'react'
+import { canGainPotion } from '../game/rewards'
 import { getRemoveCost } from '../game/runState'
-import { CardButton, DeckPicker, RelicButton } from './shared'
+import { CardButton, DeckPicker, RelicButton, RunHeader } from './shared'
 
 function PriceTag({ price, sold, affordable }) {
   if (sold) return <p className="price sold">Sold</p>
   return <p className={`price ${affordable ? '' : 'too-expensive'}`}>{price} gold</p>
 }
 
-export function ShopScreen({ run, onBuyCard, onBuyRelic, onRemoveCard, onLeave }) {
+export function ShopScreen({ run, onBuy, onRemoveCard, onLeave, onDiscardPotion }) {
   const [removing, setRemoving] = useState(false)
   const { shop } = run
   const removeCost = getRemoveCost(run)
   const canRemove = !shop.removeUsed && run.gold >= removeCost && run.deck.length > 0
+  const unavailable = (offer) => offer.sold || run.gold < offer.price
 
   return (
     <main className="game-shell reward-shell">
       <section className="reward-panel shop-panel">
-        <div className="status-strip">
-          <div>
-            <p className="eyebrow">Shop</p>
-            <h1>Merchant</h1>
-            <p className="run-message">{run.message}</p>
-          </div>
-          <span className="turn-pill gold">Gold {run.gold}</span>
+        <div>
+          <p className="eyebrow">Shop</p>
+          <h1>Merchant</h1>
+          <p className="run-message">{run.message}</p>
         </div>
+
+        <RunHeader run={run} onDiscardPotion={onDiscardPotion} />
 
         <div className="shop-cards">
           {shop.cards.map((offer, index) => (
             <div className="shop-item" key={offer.item.id}>
-              <CardButton card={offer.item} disabled={offer.sold || run.gold < offer.price} onClick={() => onBuyCard(index)} />
+              <CardButton card={offer.item} disabled={unavailable(offer)} onClick={() => onBuy('cards', index)} />
               <PriceTag price={offer.price} sold={offer.sold} affordable={run.gold >= offer.price} />
             </div>
           ))}
@@ -37,7 +38,25 @@ export function ShopScreen({ run, onBuyCard, onBuyRelic, onRemoveCard, onLeave }
         <div className="shop-row">
           {shop.relics.map((offer, index) => (
             <div className="shop-item" key={offer.item.id}>
-              <RelicButton relic={offer.item} disabled={offer.sold || run.gold < offer.price} onClick={() => onBuyRelic(index)} />
+              <RelicButton relic={offer.item} disabled={unavailable(offer)} onClick={() => onBuy('relics', index)} />
+              <PriceTag price={offer.price} sold={offer.sold} affordable={run.gold >= offer.price} />
+            </div>
+          ))}
+        </div>
+
+        <div className="shop-row">
+          {shop.potions.map((offer, index) => (
+            <div className="shop-item" key={`${offer.item.id}-${index}`}>
+              <button
+                className="relic-card potion-offer"
+                disabled={unavailable(offer) || !canGainPotion(run)}
+                onClick={() => onBuy('potions', index)}
+                type="button"
+              >
+                <span>Potion</span>
+                <strong>{offer.item.name}</strong>
+                <p>{offer.item.text}</p>
+              </button>
               <PriceTag price={offer.price} sold={offer.sold} affordable={run.gold >= offer.price} />
             </div>
           ))}
