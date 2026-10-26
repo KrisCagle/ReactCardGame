@@ -1,22 +1,33 @@
-import { actNames, nodeIcons } from '../data/gameData'
+import { useEffect, useRef } from 'react'
+import { Backdrop } from '../art/Backdrop'
+import { EnemyArt } from '../art/EnemyArt'
+import { Icon } from '../art/icons'
+import { actNames, roomTypes } from '../data/gameData'
 import { getAvailableNodeIds } from '../game/runState'
-import { LegendItem, RunHeader } from './shared'
+import { LegendItem } from './shared'
+import { TopBar } from './ui/TopBar'
+
+// Each floor gets a fixed height so the SVG lines (in % units) line up with the nodes.
+const ROW_HEIGHT = 74
 
 const rowY = (rowIndex, rowCount) => 100 - ((rowIndex + 0.5) / rowCount) * 100
 
-function MapConnections({ rows }) {
+function MapConnections({ rows, selectedPath, availableIds, currentNodeId }) {
   const nodesById = new Map(rows.flat().map((node) => [node.id, node]))
   const rowIndexById = new Map(rows.flatMap((row, rowIndex) => row.map((node) => [node.id, rowIndex])))
+  const traveled = new Set(selectedPath.slice(1).map((id, index) => `${selectedPath[index]}-${id}`))
 
   const lines = rows.flatMap((row, rowIndex) =>
     row.flatMap((node) =>
       node.connections.map((connectionId) => {
-        const target = nodesById.get(connectionId)
+        const id = `${node.id}-${connectionId}`
+        const state = traveled.has(id) ? 'traveled' : node.id === currentNodeId && availableIds.includes(connectionId) ? 'next' : 'idle'
         return {
-          id: `${node.id}-${connectionId}`,
+          id,
+          state,
           x1: node.x,
           y1: rowY(rowIndex, rows.length),
-          x2: target.x,
+          x2: nodesById.get(connectionId).x,
           y2: rowY(rowIndexById.get(connectionId), rows.length),
         }
       }),
@@ -24,71 +35,78 @@ function MapConnections({ rows }) {
   )
 
   return (
-    <svg className="map-connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <svg aria-hidden="true" className="map-connections" preserveAspectRatio="none" viewBox="0 0 100 100">
       {lines.map((line) => (
-        <line key={line.id} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+        <line className={`map-line ${line.state}`} key={line.id} x1={line.x1} x2={line.x2} y1={line.y1} y2={line.y2} />
       ))}
     </svg>
   )
 }
 
 export function MapScreen({ run, onPickNode, onRestart, onDiscardPotion }) {
-  const availableNodeIds = getAvailableNodeIds(run)
+  const scrollRef = useRef(null)
+  const availableIds = getAvailableNodeIds(run)
   const { rows } = run.map
+  const boss = rows.at(-1)[0]
+
+  // Bring the next choices into view (the map is taller than the screen).
+  useEffect(() => {
+    scrollRef.current?.querySelector('.map-node.available')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [run.currentNodeId, run.act])
 
   return (
-    <main className="game-shell map-shell">
-      <section className="map-panel">
-        <div>
+    <main className={`screen map-screen act-${run.act}`}>
+      <Backdrop act={run.act} />
+      <TopBar onDiscardPotion={onDiscardPotion} run={run} />
+
+      <div className="map-layout">
+        <aside className="map-side panel">
           <p className="eyebrow">Act {run.act}</p>
-          <h1>{run.character.name} on {actNames[run.act]}</h1>
-          <p className="run-message">{run.message}</p>
-        </div>
+          <h1>{actNames[run.act]}</h1>
+          <p className="muted">{run.message}</p>
+          <div className="map-legend">
+            {Object.entries(roomTypes).map(([type, room]) => (
+              <LegendItem icon={room.icon} key={type} label={room.label} tone={type} />
+            ))}
+          </div>
+          <button className="restart-button" onClick={onRestart} type="button">
+            Abandon run
+          </button>
+        </aside>
 
-        <RunHeader run={run} onDiscardPotion={onDiscardPotion} />
-
-        <div className="spire-map" aria-label="Map">
-          <MapConnections rows={rows} />
-          {rows.map((row, rowIndex) => (
-            <div className="map-row" key={`row-${rowIndex}`} style={{ zIndex: rowIndex + 1 }}>
-              {row.map((node) => {
-                const isAvailable = availableNodeIds.includes(node.id)
-                const isComplete = run.completedNodeIds.includes(node.id)
-                const isPath = run.selectedPath.includes(node.id)
-
+        <section aria-label="Map" className="map-scroll panel" ref={scrollRef}>
+          <div className="map-boss">
+            <EnemyArt name={boss.enemyName} />
+            <span>{boss.enemyName}</span>
+          </div>
+          <div className="spire-map" style={{ height: rows.length * ROW_HEIGHT }}>
+            <MapConnections availableIds={availableIds} currentNodeId={run.currentNodeId} rows={rows} selectedPath={run.selectedPath} />
+            {rows.map((row, rowIndex) =>
+              row.map((node) => {
+                const available = availableIds.includes(node.id)
+                const visited = run.selectedPath.includes(node.id)
+                const current = node.id === run.currentNodeId
                 return (
                   <button
-                    className={`map-node ${node.type} ${isComplete ? 'complete' : ''} ${isPath ? 'path' : ''} ${isAvailable ? 'available' : ''}`}
-                    disabled={!isAvailable}
+                    aria-label={`${roomTypes[node.type].label}${available ? ' (available)' : ''}`}
+                    className={`map-node ${node.type} ${available ? 'available' : ''} ${visited ? 'visited' : ''} ${current ? 'current' : ''}`}
+                    disabled={!available}
                     key={node.id}
                     onClick={() => onPickNode(node.id)}
-                    style={{ left: `${node.x}%` }}
-                    title={node.label}
+                    style={{ left: `${node.x}%`, top: `${rowY(rowIndex, rows.length)}%` }}
+                    title={roomTypes[node.type].label}
                     type="button"
                   >
-                    <span>{nodeIcons[node.type]}</span>
+                    <span className={`map-node-icon ${node.type}`}>
+                      <Icon name={roomTypes[node.type].icon} size={node.type === 'boss' ? 30 : 20} />
+                    </span>
                   </button>
                 )
-              })}
-            </div>
-          ))}
-        </div>
-
-        <div className="map-sidebar">
-          <div className="map-legend">
-            <LegendItem icon="x" label="Fight" tone="fight" />
-            <LegendItem icon="?" label="Random" tone="mystery" />
-            <LegendItem icon="!" label="Elite" tone="elite" />
-            <LegendItem icon="+" label="Campfire" tone="rest" />
-            <LegendItem icon="$" label="Shop" tone="shop" />
-            <LegendItem icon="*" label="Treasure" tone="treasure" />
-            <LegendItem icon="B" label="Boss" tone="boss" />
+              }),
+            )}
           </div>
-          <div className="map-meta">
-            <button onClick={onRestart} type="button">Restart run</button>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   )
 }

@@ -1,0 +1,53 @@
+:root {
+  /* Surfaces */
+  --bg: #0c0e13;
+  --panel: rgba(18, 20, 27, 0.84);
+  --panel-solid: #181b24;
+  --panel-raised: #222634;
+  --line: rgba(236, 220, 186, 0.16);
+  --line-strong: rgba(236, 220, 186, 0.34);
+
+  /* Text */
+  --text: #f3ead8;
+  --muted: #b8ad97;
+  --faint: #7d7566;
+
+  /* Accents */
+  --gold: #f2c45a;
+  --gold-deep: #9a7424;
+  --hp: #d8473a;
+  --hp-deep: #7c1d16;
+  --block: #5aa8e8;
+  --heal: #6fdc8c;
+  --poison: #93d65a;
+  --energy: #ffb43a;
+  --danger: #ff6b55;
+
+  /* Card frames */
+  --attack: #b8443a;
+  --skill: #3d7f63;
+  --power: #5868c8;
+  --curse: #59406a;
+  --uncommon: #6aa8e8;
+  --rare: #f2c45a;
+
+  /* Type */
+  --font-display: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+
+  /* Sizing */
+  --radius: 10px;
+  /* Card height is always --card-w * 1.4, computed where it's used. */
+  --card-w: clamp(96px, 10.5vw, 150px);
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fast: 140ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fast: 0ms;
+  }
+}

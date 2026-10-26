@@ -1,24 +1,43 @@
+import { CharacterArt } from '../art/CharacterArt'
 import { ACT_COUNT } from '../data/gameData'
+import { CardButton } from './shared'
+import { RelicBar } from './ui/hud'
+import { ScreenFrame } from './ui/ScreenFrame'
 
 export function VictoryScreen({ run, onRestart }) {
   return (
-    <main className="game-shell reward-shell">
-      <section className="reward-panel victory-panel">
-        <div>
-          <p className="eyebrow">Victory</p>
-          <h1>The Climb Is Won</h1>
-          <p className="run-message">{run.message}</p>
-        </div>
-
-        <div className="victory-stats">
-          <p><strong>{ACT_COUNT}</strong> acts cleared</p>
-          <p><strong>{run.player.hp}/{run.player.maxHp}</strong> HP remaining</p>
-          <p><strong>{run.deck.length}</strong> cards in deck</p>
-          <p><strong>{run.relics.length}</strong> relics: {run.relics.map((relic) => relic.name).join(', ')}</p>
-        </div>
-
-        <button className="primary secondary-action" onClick={onRestart} type="button">Start a new run</button>
-      </section>
-    </main>
+    <ScreenFrame className="victory-screen" eyebrow="Victory" message={run.message} run={run} title="The Climb Is Won" wide>
+      <div className="victory-hero">
+        <CharacterArt characterId={run.character.id} />
+        <ul className="overlay-stats">
+          <li>
+            <b>{ACT_COUNT}</b> acts cleared
+          </li>
+          <li>
+            <b>
+              {run.player.hp}/{run.player.maxHp}
+            </b>{' '}
+            HP left
+          </li>
+          <li>
+            <b>{run.deck.length}</b> cards
+          </li>
+          <li>
+            <b>{run.gold}</b> gold
+          </li>
+        </ul>
+      </div>
+      <h2>Relics</h2>
+      <RelicBar relics={run.relics} side="top" />
+      <h2>Final Deck</h2>
+      <div className="deck-grid read-only">
+        {run.deck.map((card) => (
+          <CardButton card={card} disabled key={card.deckId} showKeywords={false} />
+        ))}
+      </div>
+      <button className="btn-gold center-action" onClick={onRestart} type="button">
+        Start a new run
+      </button>
+    </ScreenFrame>
   )
 }

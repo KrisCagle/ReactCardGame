@@ -1,0 +1,591 @@
+/* ---------- Shared frame ---------- */
+.frame-screen {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.frame-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-self: center;
+  justify-self: center;
+  gap: 20px;
+  width: min(760px, calc(100% - 32px));
+  margin: 24px 0;
+  padding: clamp(18px, 3vw, 32px);
+}
+
+.frame-panel.wide {
+  width: min(1120px, calc(100% - 32px));
+}
+
+.frame-header {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.frame-header .muted {
+  max-width: 580px;
+  line-height: 1.5;
+}
+
+.frame-panel h2 {
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.center-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 6px;
+  min-width: 170px;
+}
+
+/* ---------- Choice cards (boons, campfire) ---------- */
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.choice-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-grid.card-choices {
+  --card-w: clamp(130px, 17vw, 190px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  padding: 10px 0;
+}
+
+.choice-grid > * {
+  animation: rise-in 320ms var(--ease-out) both;
+}
+
+.choice-grid > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.choice-grid > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.choice-grid > :nth-child(4) {
+  animation-delay: 210ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.choice-card {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 8px;
+  min-height: 210px;
+  padding: 22px 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #262b3a, #171a24);
+  text-align: center;
+}
+
+.choice-card:hover:not(:disabled) {
+  transform: translateY(-4px);
+}
+
+.choice-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a4030, #1a160e);
+  color: var(--gold);
+}
+
+.choice-tag {
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.choice-card strong {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.choice-card > span:last-child {
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.rest-choice .choice-icon {
+  color: #a8c8ff;
+}
+
+.smith-choice .choice-icon {
+  color: #ff9a4a;
+}
+
+/* ---------- Relic cards ---------- */
+.relic-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 84px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.relic-card-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3a3f52, #15171f);
+  color: #d8d0bc;
+}
+
+.relic-card.rarity-uncommon .relic-card-icon {
+  border-color: var(--uncommon);
+  color: var(--uncommon);
+}
+
+.relic-card.rarity-rare .relic-card-icon {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.relic-card.rarity-boss .relic-card-icon {
+  border-color: #ff8a7a;
+  color: #ff8a7a;
+}
+
+.relic-card-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.relic-card-tag {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.relic-card strong {
+  font-family: var(--font-display);
+  font-size: 17px;
+}
+
+.relic-card-copy > span:last-child {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* ---------- Rewards ---------- */
+.reward-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reward-list li {
+  animation: rise-in 300ms var(--ease-out) calc(var(--i) * 80ms) both;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.reward-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--gold);
+}
+
+.reward-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.reward-copy strong {
+  font-size: 16px;
+}
+
+.reward-copy span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ---------- Shop ---------- */
+.shop-cards {
+  --card-w: clamp(112px, 12vw, 150px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.shop-item {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.shop-item.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shop-item.row .relic-card {
+  flex: 1;
+}
+
+.shop-item.is-sold {
+  opacity: 0.45;
+}
+
+.price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 56px;
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.price.too-expensive {
+  color: var(--danger);
+}
+
+.price.sold {
+  color: var(--faint);
+}
+
+.shop-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.shop-list {
+  display: grid;
+  gap: 10px;
+}
+
+.shop-heading {
+  margin-bottom: 8px;
+}
+
+/* ---------- Events and campfire ---------- */
+.event-art,
+.campfire-art {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 196, 90, 0.22), transparent 70%);
+  color: var(--gold);
+}
+
+.campfire-art {
+  color: #ff9a4a;
+}
+
+.campfire-art .icon {
+  filter: drop-shadow(0 0 18px rgba(255, 140, 60, 0.7));
+  animation: art-flicker 0.9s ease-in-out infinite alternate;
+}
+
+.event-choices {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-choices li {
+  animation: rise-in 300ms var(--ease-out) calc(var(--i) * 80ms) both;
+}
+
+.event-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 18px;
+  text-align: left;
+}
+
+.event-choice strong {
+  color: var(--gold);
+}
+
+.event-choice span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.event-result {
+  display: grid;
+  gap: 18px;
+}
+
+.event-result p {
+  font-size: 18px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ---------- Character select ---------- */
+.select-screen {
+  display: grid;
+  align-content: center;
+  gap: 28px;
+  padding: 32px clamp(16px, 4vw, 56px);
+}
+
+.select-header {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.select-header h1 {
+  font-size: clamp(34px, 6vw, 64px);
+}
+
+.character-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 340px));
+  justify-content: center;
+  gap: 20px;
+}
+
+.character-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  min-height: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #232838, #12141b);
+  text-align: left;
+  animation: rise-in 400ms var(--ease-out) both;
+}
+
+.character-card:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.character-card:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.character-card:hover:not(:disabled) {
+  transform: translateY(-6px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.6),
+    0 0 26px rgba(242, 196, 90, 0.25);
+}
+
+.char-ironclad {
+  --char-glow: rgba(216, 71, 58, 0.45);
+}
+
+.char-huntress {
+  --char-glow: rgba(79, 143, 108, 0.45);
+}
+
+.char-arcanist {
+  --char-glow: rgba(107, 127, 214, 0.5);
+}
+
+.character-portrait {
+  display: grid;
+  place-items: end center;
+  height: 230px;
+  padding-top: 14px;
+  background: radial-gradient(circle at 50% 85%, var(--char-glow), transparent 70%);
+}
+
+.character-portrait svg {
+  width: auto;
+  height: 210px;
+}
+
+.character-copy {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px 18px 20px;
+}
+
+.character-copy .eyebrow {
+  margin: 0;
+}
+
+.character-name {
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+
+.character-hp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ff8a7a;
+  font-weight: 900;
+}
+
+.character-copy .muted {
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.trait-list {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.trait-list span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trait-list .icon {
+  flex: none;
+  color: var(--gold);
+}
+
+/* ---------- Victory ---------- */
+.victory-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.victory-hero svg {
+  width: auto;
+  height: 200px;
+}
+
+/* ---------- Modals ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: rgba(5, 6, 9, 0.8);
+  backdrop-filter: blur(3px);
+  animation: fade-in 160ms both;
+}
+
+.modal-panel {
+  display: grid;
+  gap: 18px;
+  width: min(1100px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+}
+
+.modal-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 860px) {
+  .character-grid {
+    grid-template-columns: minmax(0, 420px);
+  }
+
+  .character-card {
+    grid-template-columns: 130px 1fr;
+    grid-template-rows: none;
+  }
+
+  .character-portrait {
+    height: auto;
+    min-height: 160px;
+  }
+
+  .character-portrait svg {
+    height: 150px;
+  }
+
+  .shop-columns,
+  .choice-grid.two {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice-grid > *,
+  .reward-list li,
+  .event-choices li,
+  .character-card,
+  .campfire-art .icon,
+  .modal-backdrop {
+    animation: none;
+  }
+}
