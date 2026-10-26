@@ -5,7 +5,7 @@ export function RewardScreen({ run, onChoose, onSkip }) {
     <main className="game-shell reward-shell">
       <section className="reward-panel">
         <div>
-          <p className="eyebrow">{run.rewardKind === 'shop' ? 'Shop' : 'Reward'}</p>
+          <p className="eyebrow">Reward - {run.gold} gold</p>
           <h1>{run.rewardTitle}</h1>
           <p className="run-message">{run.message}</p>
         </div>
@@ -21,9 +21,7 @@ export function RewardScreen({ run, onChoose, onSkip }) {
           ))}
         </div>
 
-        <button className="secondary-action" onClick={onSkip} type="button">
-          {run.rewardKind === 'shop' ? 'Leave' : 'Skip'}
-        </button>
+        <button className="secondary-action" onClick={onSkip} type="button">Skip</button>
       </section>
     </main>
   )

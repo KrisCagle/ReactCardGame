@@ -7,8 +7,16 @@ import { pickOne, shuffle } from './rng'
 export const HAND_SIZE = 5
 export const MAX_HAND_SIZE = 10
 export const BASE_ENERGY = 3
-export const VULNERABLE_BONUS = 3
+// Status multipliers, matching Slay the Spire.
+export const VULNERABLE_MULTIPLIER = 1.5 // takes 50% more attack damage
+export const WEAK_MULTIPLIER = 0.75 // deals 25% less attack damage
+export const FRAIL_MULTIPLIER = 0.75 // gains 25% less block from cards
 const LOG_LENGTH = 6
+
+// Debuffs every combatant carries. Duration debuffs tick down at the end of
+// their owner's turn; poison deals its value at the start of the owner's turn.
+const noStatuses = { vulnerable: 0, weak: 0, frail: 0, poison: 0 }
+const DURATION_DEBUFFS = ['vulnerable', 'weak', 'frail']
 
 const sumOf = (items, key) => items.reduce((total, item) => total + (item[key] ?? 0), 0)
 
@@ -32,17 +40,18 @@ const scaleHp = (baseHp, nodeType, rowIndex, act) => {
   return baseHp + hpScale + rowIndex * (nodeType === 'boss' ? 4 : 2)
 }
 
-export const createEnemy = (nodeType, rowIndex, act, rng) => {
-  const template = pickOne(rng, enemies[nodeType] ?? enemies.fight)
+export const createEnemy = (nodeType, rowIndex, act, rng, enemyName) => {
+  const pool = enemies[nodeType] ?? enemies.fight
+  const template = pool.find((enemy) => enemy.name === enemyName) ?? pickOne(rng, pool)
   const maxHp = scaleHp(template.maxHp, nodeType, rowIndex, act)
 
   return {
     ...template,
+    ...noStatuses,
     maxHp,
     hp: maxHp,
     block: 0,
     strength: 0,
-    vulnerable: 0,
     moveIndex: 0,
     moves: template.moves.map((move) => scaleMove(move, nodeType, rowIndex, act)),
   }
@@ -83,6 +92,7 @@ export const createCombat = (setup, rng) => {
     node,
     act,
     player: {
+      ...noStatuses,
       hp: player.hp,
       maxHp: player.maxHp,
       block: sumOf(relics, 'block'),
@@ -91,7 +101,7 @@ export const createCombat = (setup, rng) => {
       strength: sumOf(relics, 'strength'),
       blockPerTurn: 0,
     },
-    enemy: createEnemy(node.type, rowIndex, act, rng),
+    enemy: createEnemy(node.type, rowIndex, act, rng, node.enemyName),
     drawPile: cards,
     hand: [],
     discardPile: [],
@@ -107,16 +117,43 @@ export const createCombat = (setup, rng) => {
 
 export const getEnemyIntent = (combat) => combat.enemy.moves[combat.enemy.moveIndex % combat.enemy.moves.length]
 
-export const describeIntent = (move, strength = 0) => {
+// Damage numbers are shown as they would actually land on the player right now.
+export const describeIntent = (move, enemy, player) => {
   const parts = []
-  if (move.damage) parts.push(`${move.damage + strength} damage`)
+  if (move.damage) parts.push(`${calculateAttackDamage(move.damage, enemy, player)} damage`)
   if (move.block) parts.push(`${move.block} block`)
   if (move.strength) parts.push(`+${move.strength} strength`)
+  DURATION_DEBUFFS.forEach((status) => {
+    if (move[status]) parts.push(`${move[status]} ${status}`)
+  })
   return parts.join(', ')
 }
 
-export const calculateAttackDamage = (baseDamage, strength, targetVulnerable) =>
-  Math.max(0, baseDamage + strength + (targetVulnerable > 0 ? VULNERABLE_BONUS : 0))
+export const calculateAttackDamage = (baseDamage, attacker, defender) => {
+  let damage = baseDamage + (attacker.strength ?? 0)
+  if (attacker.weak > 0) damage *= WEAK_MULTIPLIER
+  if (defender.vulnerable > 0) damage *= VULNERABLE_MULTIPLIER
+  return Math.max(0, Math.floor(damage))
+}
+
+export const calculateBlock = (baseBlock, target) => Math.floor(baseBlock * (target.frail > 0 ? FRAIL_MULTIPLIER : 1))
+
+const tickDebuffs = (combatant) => {
+  const next = { ...combatant }
+  DURATION_DEBUFFS.forEach((status) => {
+    next[status] = Math.max(0, next[status] - 1)
+  })
+  return next
+}
+
+// Poison ignores block, then loses one stack.
+const tickPoison = (combatant) => {
+  if (combatant.poison <= 0) return { combatant, hpLoss: 0 }
+  return {
+    combatant: { ...combatant, hp: Math.max(0, combatant.hp - combatant.poison), poison: combatant.poison - 1 },
+    hpLoss: combatant.poison,
+  }
+}
 
 // Block absorbs damage first; returns the updated target and the HP it lost.
 export const applyDamage = (target, amount) => {
@@ -139,7 +176,7 @@ export const playCard = (combat, instanceId, rng) => {
     const hits = card.hits ?? 1
     let totalLoss = 0
     for (let i = 0; i < hits && enemy.hp > 0; i += 1) {
-      const result = applyDamage(enemy, calculateAttackDamage(card.damage, player.strength, enemy.vulnerable))
+      const result = applyDamage(enemy, calculateAttackDamage(card.damage, player, enemy))
       enemy = result.target
       totalLoss += result.hpLoss
     }
@@ -147,11 +184,20 @@ export const playCard = (combat, instanceId, rng) => {
   }
   if (card.vulnerable) {
     enemy.vulnerable += card.vulnerable
-    messages.push(`${card.name} exposes the enemy.`)
+    messages.push(`${card.name} applies ${card.vulnerable} vulnerable.`)
+  }
+  if (card.weak) {
+    enemy.weak += card.weak
+    messages.push(`${card.name} applies ${card.weak} weak.`)
+  }
+  if (card.poison) {
+    enemy.poison += card.poison
+    messages.push(`${card.name} applies ${card.poison} poison.`)
   }
   if (card.block) {
-    player.block += card.block
-    messages.push(`${card.name} adds ${card.block} block.`)
+    const gained = calculateBlock(card.block, player)
+    player.block += gained
+    messages.push(`${card.name} adds ${gained} block.`)
   }
   if (card.strength) {
     player.strength += card.strength
@@ -187,9 +233,15 @@ export const playCard = (combat, instanceId, rng) => {
 
 const runEnemyTurn = (combat) => {
   const move = getEnemyIntent(combat)
-  let enemy = { ...combat.enemy, block: 0 }
+  const poisoned = tickPoison({ ...combat.enemy, block: 0 })
+  let enemy = poisoned.combatant
   let player = { ...combat.player }
   const messages = []
+
+  if (poisoned.hpLoss) messages.push(`${enemy.name} takes ${poisoned.hpLoss} poison damage.`)
+  if (enemy.hp <= 0) {
+    return addLog({ ...combat, enemy, outcome: 'won' }, [`${enemy.name} is defeated.`, ...messages])
+  }
 
   if (move.block) {
     enemy.block += move.block
@@ -200,30 +252,44 @@ const runEnemyTurn = (combat) => {
     messages.push(`${enemy.name} grows stronger.`)
   }
   if (move.damage) {
-    const result = applyDamage(player, calculateAttackDamage(move.damage, enemy.strength, 0))
+    const result = applyDamage(player, calculateAttackDamage(move.damage, enemy, player))
     player = result.target
     messages.push(`${enemy.name} uses ${move.intent} for ${result.hpLoss}.`)
   }
+  DURATION_DEBUFFS.forEach((status) => {
+    if (!move[status]) return
+    player = { ...player, [status]: player[status] + move[status] }
+    messages.push(`${enemy.name} applies ${move[status]} ${status}.`)
+  })
 
-  enemy = { ...enemy, vulnerable: Math.max(0, enemy.vulnerable - 1), moveIndex: enemy.moveIndex + 1 }
+  enemy = { ...tickDebuffs(enemy), moveIndex: enemy.moveIndex + 1 }
 
   return addLog({ ...combat, player, enemy }, messages)
 }
 
 const startPlayerTurn = (combat, rng) => {
-  const next = {
-    ...combat,
-    turn: combat.turn + 1,
-    player: { ...combat.player, block: combat.player.blockPerTurn, energy: combat.player.maxEnergy },
-  }
-  return drawCards(addLog(next, [`Turn ${next.turn} begins.`]), HAND_SIZE, rng)
+  const turn = combat.turn + 1
+  const poisoned = tickPoison(combat.player)
+  const player = { ...poisoned.combatant, block: combat.player.blockPerTurn, energy: combat.player.maxEnergy }
+  const messages = poisoned.hpLoss ? [`You take ${poisoned.hpLoss} poison damage.`, `Turn ${turn} begins.`] : [`Turn ${turn} begins.`]
+  const next = addLog({ ...combat, turn, player }, messages)
+
+  if (player.hp <= 0) return addLog({ ...next, outcome: 'lost' }, ['You fall, but the next climb begins here.'])
+  return drawCards(next, HAND_SIZE, rng)
 }
 
 export const endTurn = (combat, rng) => {
   if (combat.outcome !== 'playing') return combat
 
-  const discarded = { ...combat, discardPile: [...combat.discardPile, ...combat.hand], hand: [] }
+  // End of the player's turn: discard the hand and tick the player's debuffs.
+  const discarded = {
+    ...combat,
+    player: tickDebuffs(combat.player),
+    discardPile: [...combat.discardPile, ...combat.hand],
+    hand: [],
+  }
   const afterEnemy = runEnemyTurn(discarded)
+  if (afterEnemy.outcome === 'won') return afterEnemy
 
   if (afterEnemy.player.hp <= 0) {
     return addLog({ ...afterEnemy, outcome: 'lost' }, ['You fall, but the next climb begins here.'])

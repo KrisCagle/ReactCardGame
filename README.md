@@ -4,14 +4,14 @@ A browser-based roguelike deckbuilder prototype inspired by games like Slay the 
 
 ## Current Features
 
-- Branching act map with enemy, mystery, shop, elite, rest, and boss nodes
-- Turn-based combat with energy, block, enemy intent, draw pile, hand, and discard pile
-- Starter deck with attack, skill, and power cards
-- Card rewards after regular fights
-- Relic rewards from elites, bosses, and some mystery events
-- Mystery nodes that can become a fight, card cache, or relic event
-- Rest nodes that heal the player
-- Simple shop nodes that offer card choices while gold is still being built
+- Three characters with their own starter decks, passives, and card pools
+- A freshly generated branching map every act, with fights, elites, mystery rooms, shops, campfires, treasure, and a boss
+- Three acts; beat the final boss to win the run
+- Turn-based combat with energy, block, enemy intents, draw pile, hand, and discard pile
+- Status effects: strength, vulnerable, weak, frail, and poison
+- Card upgrades at campfires (or rest to heal 30% HP)
+- Gold from fights and treasure, spent at shops on cards, relics, and card removal
+- Card rewards after fights, relic rewards from elites, bosses, treasure, and some mystery rooms
 
 ## Tech Stack
 
@@ -57,7 +57,8 @@ npm test
 Game rules live in `src/game/` as pure functions with no React in them, so they can be unit tested and simulated:
 
 - `combat.js` - drawing, playing cards, damage, enemy turns
-- `runState.js` - building a run, rewards, map progress, acts
+- `runState.js` - building a run, rewards, gold, shops, campfires, map progress, acts
+- `mapGen.js` - procedural act maps (non-crossing paths plus room placement rules)
 - `gameReducer.js` - the single `useReducer` entry point the UI dispatches actions to
 - `rng.js` - seeded random numbers; the seed lives in game state, so every transition is pure and runs are reproducible
 - `cards.js` - card text generated from card effects
@@ -76,12 +77,10 @@ Components in `src/components/` only render state and dispatch actions.
 
 ## Roadmap
 
-- Generate a fresh map for each run
-- Add gold, priced shop purchases, and card removal
 - Add more enemy types and better enemy move patterns
 - Expand card effects and card rarity
-- Add more relics with persistent run modifiers
-- Add treasure, event, and choice-based mystery rooms
+- Add more relics that trigger on events
+- Add choice-based mystery events
 - Add animations, hit feedback, and improved card movement
 
 ## Project Status

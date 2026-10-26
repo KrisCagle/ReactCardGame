@@ -4,15 +4,24 @@ import { createCombat, endTurn, playCard } from './combat'
 import { createRng, randomSeed } from './rng'
 import {
   applyOpeningBoon,
+  buyShopCard,
+  buyShopRelic,
   createInitialRun,
   createRunFromCharacter,
+  enterRest,
+  enterShop,
+  findNode,
   getAvailableNodeIds,
   getCardRewardChoices,
   getCombatSetup,
   getRelicChoices,
   leaveReward,
   offerReward,
-  restAtNode,
+  openTreasure,
+  removeCardAtShop,
+  restHeal,
+  returnToMap,
+  smithCard,
   takeReward,
   visitNode,
   winCombat,
@@ -59,27 +68,32 @@ const resolveMystery = (state, node, rng) => {
   }
 }
 
-const enterNode = (state, node, rng) => {
-  if (state.run.screen !== 'map' || !getAvailableNodeIds(state.run).includes(node.id)) return state
+const enterNode = (state, nodeId, rng) => {
+  const node = findNode(state.run, nodeId)
+  if (state.run.screen !== 'map' || !node || !getAvailableNodeIds(state.run).includes(nodeId)) return state
 
-  if (node.type === 'rest') return { ...state, run: restAtNode(state.run, node) }
-
-  if (node.type === 'shop') {
-    return {
-      ...state,
-      run: offerReward(visitNode(state.run, node), {
-        kind: 'shop',
-        title: 'Merchant Wares',
-        source: 'shop',
-        choices: getCardRewardChoices(state.run, 5, rng),
-        message: 'Take one card from the merchant while gold is still imaginary.',
-      }),
-    }
+  switch (node.type) {
+    case 'rest':
+      return { ...state, run: enterRest(state.run, node) }
+    case 'shop':
+      return { ...state, run: enterShop(state.run, node, rng) }
+    case 'treasure':
+      return { ...state, run: openTreasure(state.run, node, rng) }
+    case 'mystery':
+      return resolveMystery(state, node, rng)
+    default:
+      return startFight(state, node, `${node.label}: survive the fight.`, rng)
   }
+}
 
-  if (node.type === 'mystery') return resolveMystery(state, node, rng)
+// Combat can end on the player's action (a killing blow) or on end turn (poison).
+const afterCombatStep = (state, combat, rng) =>
+  combat.outcome === 'won' ? { ...state, run: winCombat(state.run, combat, rng), combat: null } : { ...state, combat }
 
-  return startFight(state, node, `${node.label}: survive the fight.`, rng)
+const updateRun = (state, screen, update) => {
+  if (state.run.screen !== screen) return state
+  const run = update(state.run)
+  return run === state.run ? state : { ...state, run }
 }
 
 const reduce = (state, action, rng) => {
@@ -88,37 +102,47 @@ const reduce = (state, action, rng) => {
       return { ...state, run: createRunFromCharacter(action.character, rng), combat: null }
 
     case 'chooseOpeningBoon':
-      return {
-        ...state,
-        run: {
-          ...applyOpeningBoon(state.run, action.boon),
-          screen: 'map',
-          openingChoices: [],
-          message: `${action.boon.title} chosen. Choose your first room.`,
-        },
-      }
+      return updateRun(state, 'openingBoon', (run) => ({
+        ...applyOpeningBoon(run, action.boon),
+        screen: 'map',
+        openingChoices: [],
+        message: `${action.boon.title} chosen. Choose your first room.`,
+      }))
 
     case 'enterNode':
-      return enterNode(state, action.node, rng)
+      return enterNode(state, action.nodeId, rng)
 
-    case 'playCard': {
+    case 'playCard':
       if (!state.combat) return state
-      const combat = playCard(state.combat, action.instanceId, rng)
-      if (combat.outcome === 'won') return { ...state, run: winCombat(state.run, combat, rng), combat: null }
-      return { ...state, combat }
-    }
+      return afterCombatStep(state, playCard(state.combat, action.instanceId, rng), rng)
 
     case 'endTurn':
       if (!state.combat) return state
-      return { ...state, combat: endTurn(state.combat, rng) }
+      return afterCombatStep(state, endTurn(state.combat, rng), rng)
 
     case 'chooseReward':
-      if (state.run.screen !== 'reward') return state
-      return { ...state, run: takeReward(state.run, action.reward) }
+      return updateRun(state, 'reward', (run) => takeReward(run, action.reward, rng))
 
     case 'skipReward':
-      if (state.run.screen !== 'reward') return state
-      return { ...state, run: leaveReward(state.run, 'You move on empty-handed.') }
+      return updateRun(state, 'reward', (run) => leaveReward(run, 'You move on empty-handed.', rng))
+
+    case 'restHeal':
+      return updateRun(state, 'rest', restHeal)
+
+    case 'smithCard':
+      return updateRun(state, 'rest', (run) => smithCard(run, action.deckId))
+
+    case 'buyShopCard':
+      return updateRun(state, 'shop', (run) => buyShopCard(run, action.index))
+
+    case 'buyShopRelic':
+      return updateRun(state, 'shop', (run) => buyShopRelic(run, action.index))
+
+    case 'removeCard':
+      return updateRun(state, 'shop', (run) => removeCardAtShop(run, action.deckId))
+
+    case 'leaveShop':
+      return updateRun(state, 'shop', (run) => returnToMap(run, 'You leave the merchant behind. Choose your next room.'))
 
     case 'restart':
       return { ...state, run: createInitialRun(), combat: null }

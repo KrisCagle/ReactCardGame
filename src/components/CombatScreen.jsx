@@ -1,5 +1,5 @@
 import { canPlayCard, describeIntent, getEnemyIntent } from '../game/combat'
-import { CardButton, HealthBar, Stat } from './shared'
+import { CardButton, HealthBar, Stat, StatusList } from './shared'
 
 export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) {
   const enemyMove = getEnemyIntent(combat)
@@ -25,7 +25,8 @@ export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) 
             <div className="combatant-copy">
               <h2>{run.character.name}</h2>
               <HealthBar value={combat.player.hp} max={combat.player.maxHp} percent={healthPercent} />
-              <p>Block {combat.player.block} - Strength {combat.player.strength} - Energy {combat.player.energy}/{combat.player.maxEnergy}</p>
+              <p>Block {combat.player.block} - Energy {combat.player.energy}/{combat.player.maxEnergy}</p>
+              <StatusList combatant={combat.player} />
               {combat.powerPile.length > 0 && (
                 <p className="powers">Powers: {combat.powerPile.map((card) => card.name).join(', ')}</p>
               )}
@@ -41,8 +42,9 @@ export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) 
             <div className="combatant-copy">
               <h2>{combat.enemy.name}</h2>
               <HealthBar value={combat.enemy.hp} max={combat.enemy.maxHp} percent={enemyPercent} />
-              <p>Block {combat.enemy.block} - Strength {combat.enemy.strength}</p>
-              <div className="intent">{enemyMove.intent}: {describeIntent(enemyMove, combat.enemy.strength)}</div>
+              <p>Block {combat.enemy.block}</p>
+              <StatusList combatant={combat.enemy} />
+              <div className="intent">{enemyMove.intent}: {describeIntent(enemyMove, combat.enemy, combat.player)}</div>
             </div>
           </article>
         </div>
