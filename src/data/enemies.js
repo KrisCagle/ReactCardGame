@@ -22,13 +22,13 @@ export const enemiesByAct = {
       { name: 'Red Louse', maxHp: 16, pattern: 'random', moves: [{ intent: 'Bite', damage: 7, weight: 3 }, { intent: 'Grow', strength: 3 }] },
     ],
     strong: [
-      { name: 'Spore Beast', maxHp: 44, moves: [{ intent: 'Spore Cloud', frail: 2 }, { intent: 'Bite', damage: 10 }, { intent: 'Bite', damage: 10 }] },
-      { name: 'Looter', maxHp: 46, moves: [{ intent: 'Mug', damage: 10 }, { intent: 'Lunge', damage: 12 }, { intent: 'Smoke Bomb', block: 8 }] },
-      { name: 'Blue Slaver', maxHp: 48, pattern: 'random', moves: [{ intent: 'Stab', damage: 12, weight: 2 }, { intent: 'Rake', damage: 7, weak: 1 }] },
-      { name: 'Fungal Brute', maxHp: 54, passive: { thorns: 2 }, moves: [{ intent: 'Slam', damage: 9 }, { intent: 'Swell', strength: 2, block: 8 }, { intent: 'Slam', damage: 9 }] },
+      { name: 'Spore Beast', maxHp: 48, moves: [{ intent: 'Spore Cloud', frail: 2 }, { intent: 'Bite', damage: 10 }, { intent: 'Bite', damage: 10 }] },
+      { name: 'Looter', maxHp: 50, moves: [{ intent: 'Mug', damage: 11 }, { intent: 'Lunge', damage: 13 }, { intent: 'Smoke Bomb', block: 8 }] },
+      { name: 'Blue Slaver', maxHp: 52, pattern: 'random', moves: [{ intent: 'Stab', damage: 13, weight: 2 }, { intent: 'Rake', damage: 8, weak: 1 }] },
+      { name: 'Fungal Brute', maxHp: 58, passive: { thorns: 2 }, moves: [{ intent: 'Slam', damage: 9 }, { intent: 'Swell', strength: 2, block: 8 }, { intent: 'Slam', damage: 9 }] },
     ],
     elite: [
-      { name: 'Gremlin Nob', maxHp: 76, passive: { enrage: 2 }, moves: [{ intent: 'Bellow', strength: 2 }, { intent: 'Skull Bash', damage: 6, vulnerable: 2 }, { intent: 'Rush', damage: 14 }] },
+      { name: 'Gremlin Nob', maxHp: 76, passive: { enrage: 2 }, moves: [{ intent: 'Bellow', strength: 2 }, { intent: 'Skull Bash', damage: 6, vulnerable: 2 }, { intent: 'Rush', damage: 16 }] },
       { name: 'Sentinel Golem', maxHp: 64, passive: { metallicize: 6 }, moves: [{ intent: 'Rest', block: 10 }, { intent: 'Smash', damage: 18 }, { intent: 'Drain', weak: 1, frail: 1, strength: 2 }] },
       { name: 'Ancient Sentry', maxHp: 58, passive: { thorns: 3 }, moves: [{ intent: 'Beam', damage: 9, hits: 2 }, { intent: 'Bolt', damage: 10, frail: 2 }] },
     ],
@@ -44,13 +44,13 @@ export const enemiesByAct = {
       { name: 'Snake Plant', maxHp: 70, passive: { metallicize: 3 }, moves: [{ intent: 'Chomp', damage: 7, hits: 3 }, { intent: 'Spores', weak: 2, frail: 2 }] },
     ],
     strong: [
-      { name: 'Chosen', maxHp: 85, moves: [{ intent: 'Poke', damage: 5, hits: 2 }, { intent: 'Drain', weak: 3, strength: 3 }, { intent: 'Zap', damage: 18 }] },
-      { name: 'Snecko', maxHp: 95, pattern: 'random', moves: [{ intent: 'Bite', damage: 15, weight: 2 }, { intent: 'Tail Whip', damage: 8, vulnerable: 2, weak: 2 }] },
-      { name: 'Book of Stabbing', maxHp: 120, moves: [{ intent: 'Multi-Stab', damage: 5, hits: 3 }, { intent: 'Big Stab', damage: 18 }] },
+      { name: 'Chosen', maxHp: 78, moves: [{ intent: 'Poke', damage: 5, hits: 2 }, { intent: 'Drain', weak: 3, strength: 3 }, { intent: 'Zap', damage: 18 }] },
+      { name: 'Snecko', maxHp: 86, pattern: 'random', moves: [{ intent: 'Bite', damage: 15, weight: 2 }, { intent: 'Tail Whip', damage: 8, vulnerable: 2, weak: 2 }] },
+      { name: 'Book of Stabbing', maxHp: 104, moves: [{ intent: 'Multi-Stab', damage: 5, hits: 3 }, { intent: 'Big Stab', damage: 16 }] },
     ],
     elite: [
       { name: 'Bronze Golem', maxHp: 140, passive: { metallicize: 8 }, moves: [{ intent: 'Crush', damage: 20 }, { intent: 'Fortify', block: 20, strength: 3 }] },
-      { name: 'Bone Knight', maxHp: 110, passive: { enrage: 1 }, moves: [{ intent: 'Cleave', damage: 16 }, { intent: 'Taunt', vulnerable: 2, weak: 2 }, { intent: 'Execute', damage: 10, hits: 2 }] },
+      { name: 'Bone Knight', maxHp: 96, passive: { enrage: 1 }, moves: [{ intent: 'Cleave', damage: 14 }, { intent: 'Taunt', vulnerable: 2, weak: 2 }, { intent: 'Execute', damage: 8, hits: 2 }] },
     ],
     boss: [
       { name: 'The Collector', maxHp: 220, moves: [{ intent: 'Fireball', damage: 18 }, { intent: 'Buff', strength: 3, block: 15 }, { intent: 'Mega Debuff', weak: 3, vulnerable: 3, frail: 3 }, { intent: 'Fireball', damage: 18 }] },
@@ -63,7 +63,7 @@ export const enemiesByAct = {
       { name: 'Orb Walker', maxHp: 92, passive: { ritual: 1 }, pattern: 'random', moves: [{ intent: 'Laser', damage: 11, frail: 1 }, { intent: 'Claw', damage: 15 }] },
     ],
     strong: [
-      { name: 'Writhing Mass', maxHp: 140, passive: { thorns: 3 }, pattern: 'random', moves: [{ intent: 'Flail', damage: 15 }, { intent: 'Wither', damage: 10, weak: 2, vulnerable: 2 }, { intent: 'Multi-Strike', damage: 7, hits: 3 }] },
+      { name: 'Writhing Mass', maxHp: 126, passive: { thorns: 2 }, pattern: 'random', moves: [{ intent: 'Flail', damage: 15 }, { intent: 'Wither', damage: 10, weak: 2, vulnerable: 2 }, { intent: 'Multi-Strike', damage: 7, hits: 3 }] },
       { name: 'Giant Head', maxHp: 170, moves: [{ intent: 'Glare', weak: 1 }, { intent: 'Count', damage: 13 }, { intent: 'Count', damage: 13 }, { intent: 'It Is Time', damage: 30 }] },
       { name: 'Spiker', maxHp: 70, passive: { thorns: 5 }, moves: [{ intent: 'Cut', damage: 9 }, { intent: 'Spike Up', block: 10, strength: 2 }] },
     ],
@@ -73,7 +73,7 @@ export const enemiesByAct = {
     ],
     boss: [
       { name: 'Time Eater', maxHp: 320, moves: [{ intent: 'Reverberate', damage: 7, hits: 3 }, { intent: 'Head Slam', damage: 26, frail: 2 }, { intent: 'Ripple', block: 20, weak: 1, vulnerable: 2, frail: 1 }] },
-      { name: 'Awakened One', maxHp: 300, passive: { ritual: 2 }, moves: [{ intent: 'Slash', damage: 20 }, { intent: 'Soul Strike', damage: 6, hits: 4 }] },
+      { name: 'Awakened One', maxHp: 270, passive: { ritual: 2 }, moves: [{ intent: 'Slash', damage: 20 }, { intent: 'Soul Strike', damage: 6, hits: 4 }] },
     ],
   },
 }

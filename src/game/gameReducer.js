@@ -153,6 +153,9 @@ const reduce = (state, action, rng) => {
 }
 
 export const gameReducer = (state, action) => {
+  // A loaded save replaces everything, including its own rng seed.
+  if (action.type === 'loadGame') return action.state
+
   const rng = createRng(state.seed)
   const next = reduce(state, action, rng)
   return next === state ? state : { ...next, seed: rng.seed }

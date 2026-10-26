@@ -152,6 +152,33 @@
   padding: 0 12px;
 }
 
+/* ---------- Sound ---------- */
+.sound-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sound-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.volume-slider {
+  width: 72px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.volume-slider:disabled {
+  opacity: 0.4;
+}
+
 /* ---------- Relics ---------- */
 .relic-bar {
   display: flex;
@@ -481,6 +508,10 @@
   .deck-button {
     min-height: 28px;
     padding: 0 8px;
+  }
+
+  .volume-slider {
+    display: none;
   }
 }
 

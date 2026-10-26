@@ -10,6 +10,9 @@ export const diffCombat = (prev, next, actionType) => {
   const turnEnded = actionType === 'endTurn'
 
   if (turnEnded && getEnemyIntent(prev)?.damage) events.push({ side: 'enemy', kind: 'attack' })
+  // Side 'none': cues for sound, not something that happens to a combatant.
+  if (actionType === 'playCard') events.push({ side: 'none', kind: 'cardPlayed' })
+  if (actionType === 'usePotion') events.push({ side: 'none', kind: 'potion' })
 
   ;['player', 'enemy'].forEach((side) => {
     const before = prev[side]
