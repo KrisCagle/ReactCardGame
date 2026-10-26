@@ -1,5 +1,7 @@
-import { useCallback, useReducer } from 'react'
+import { useCallback, useEffect, useReducer, useState } from 'react'
+import { useGameAudio } from './audio/useGameAudio'
 import { createInitialGameState, gameReducer } from './game/gameReducer'
+import { clearSave, loadSave, persistGame } from './storage/saveStorage'
 import { CharacterSelectScreen } from './components/CharacterSelectScreen'
 import { OpeningBoonScreen } from './components/OpeningBoonScreen'
 import { MapScreen } from './components/MapScreen'
@@ -11,14 +13,42 @@ import { ShopScreen } from './components/ShopScreen'
 import { EventScreen } from './components/EventScreen'
 
 function App() {
-  const [{ run, combat }, dispatch] = useReducer(gameReducer, undefined, () => createInitialGameState())
-  const restart = () => dispatch({ type: 'restart' })
+  const [state, dispatch] = useReducer(gameReducer, undefined, () => createInitialGameState())
+  const { run, combat } = state
+  // The save found at startup, offered on the title screen. Starting or
+  // continuing a run replaces it, so it's cleared then.
+  const [savedGame, setSavedGame] = useState(loadSave)
+
+  // Autosave after every action; the save is deleted when the run ends.
+  useEffect(() => persistGame(state), [state])
+  useGameAudio(state)
+
+  const restart = () => {
+    clearSave()
+    dispatch({ type: 'restart' })
+  }
   const discardPotion = (index) => dispatch({ type: 'discardPotion', index })
   // Stable identity: CombatScreen schedules this after the enemy's death animation.
   const finishCombat = useCallback(() => dispatch({ type: 'finishCombat' }), [])
 
   if (run.screen === 'characterSelect') {
-    return <CharacterSelectScreen onChoose={(character) => dispatch({ type: 'chooseCharacter', character })} />
+    return (
+      <CharacterSelectScreen
+        onChoose={(character) => {
+          setSavedGame(null)
+          dispatch({ type: 'chooseCharacter', character })
+        }}
+        onContinue={() => {
+          dispatch({ type: 'loadGame', state: savedGame.state })
+          setSavedGame(null)
+        }}
+        onDiscardSave={() => {
+          clearSave()
+          setSavedGame(null)
+        }}
+        savedGame={savedGame}
+      />
+    )
   }
   if (run.screen === 'openingBoon') {
     return <OpeningBoonScreen run={run} onChoose={(boon) => dispatch({ type: 'chooseOpeningBoon', boon })} />

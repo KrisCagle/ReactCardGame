@@ -15,6 +15,9 @@ A browser-based roguelike deckbuilder inspired by Slay the Spire, built with Rea
 - Choice-based mystery events with costs, gambles, card removal, upgrades, and transforms
 - Card upgrades at campfires (or rest to heal 30% HP)
 - Gold from fights and treasure, spent at shops on cards, relics, potions, and card removal
+- Autosave: close the tab mid-run and pick up exactly where you left off (the save is deleted when the run ends)
+- Synthesized sound effects (Web Audio, no audio files) with mute and volume controls
+- Hand-drawn SVG art, animated combat, and tooltips for every keyword, status, relic, and potion
 
 ## Tech Stack
 
@@ -77,6 +80,12 @@ Game rules live in `src/game/` as pure functions with no React in them, so they 
 - `rng.js` - seeded random numbers; the seed lives in game state, so every transition is pure and runs are reproducible
 - `cards.js` - card text generated from card effects (with live damage/block numbers in combat), and upgrades
 - `fx.js` - diffs two combat states into "what happened" events (damage, block, heals, debuffs) that the UI animates
+- `save.js` - versioned save files; game state is plain data, so a save is JSON plus a version (the rng seed is included, so reloading can't re-roll outcomes)
+
+Outside `src/game/`:
+
+- `src/storage/saveStorage.js` - guarded `localStorage` access (the game still runs if storage is blocked)
+- `src/audio/` - `sfx.js` synthesizes every sound; `gameSounds.js` is a pure function that maps state changes to sounds; `useGameAudio.js` connects them to React
 - `bot.js` - a heuristic auto-player used by the fuzz tests and the simulator
 
 Static content lives in `src/data/` (cards, characters, enemies, relics, potions, events, keywords). Components in `src/components/` only render state and dispatch actions.
@@ -105,6 +114,10 @@ Static content lives in `src/data/` (cards, characters, enemies, relics, potions
 ## Roadmap
 
 - Fights against multiple enemies at once (with targeting)
-- Sound effects and music
-- Save and resume runs
-- More balance passes using the simulator
+- Background music
+- Ascension-style difficulty levels after a win
+- Playtesting with real players to tune what the bot can't feel
+
+## Balance
+
+Bot win rates from `npm run sim -- 1000` (a heuristic bot, so a human should do better): Ironclad 25%, Huntress 30%, Arcanist 29%.

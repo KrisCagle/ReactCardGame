@@ -3,6 +3,7 @@ import { Icon } from '../../art/icons'
 import { actNames } from '../../data/gameData'
 import { DeckPicker } from '../shared'
 import { PotionBelt, RelicBar } from './hud'
+import { SoundControls } from './SoundControls'
 import { Tooltip } from './Tooltip'
 
 // The StS-style bar across the top of every screen once a run has started.
@@ -35,6 +36,7 @@ export function TopBar({ run, hp, onUsePotion, onDiscardPotion, floor }) {
             <Icon name="cards" size={20} />
             {run.deck.length}
           </button>
+          <SoundControls />
         </div>
       </div>
       <RelicBar relics={run.relics} />

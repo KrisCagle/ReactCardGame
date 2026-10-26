@@ -78,6 +78,19 @@ export const iconPaths = {
   ),
   cross: <path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z" />,
   moon: <path d="M15 2a10 10 0 1 0 7 17A8 8 0 0 1 15 2z" />,
+  speaker: (
+    <>
+      <path d="M3 9h4l5-5v16l-5-5H3z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+    </>
+  ),
+  speakerOff: (
+    <>
+      <path d="M3 9h4l5-5v16l-5-5H3z" />
+      <path d="m15.5 9 5 6m0-6-5 6" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+    </>
+  ),
+  save: <path d="M4 3h13l4 4v14H3V3zm3 2v5h9V5zm5 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />,
 }
 
 export const iconNames = Object.keys(iconPaths)

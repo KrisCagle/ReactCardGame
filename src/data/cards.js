@@ -26,7 +26,7 @@ export const cardLibrary = {
 
   // Ironclad
   bash: { id: 'bash', name: 'Bash', type: 'Attack', rarity: 'common', cost: 2, damage: 8, vulnerable: 2, upgrade: { damage: 10, vulnerable: 3 } },
-  heavyBlade: { id: 'heavy-blade', name: 'Heavy Blade', type: 'Attack', rarity: 'common', cost: 2, damage: 16, upgrade: { damage: 22 } },
+  heavyBlade: { id: 'heavy-blade', name: 'Heavy Blade', type: 'Attack', rarity: 'common', cost: 2, damage: 18, upgrade: { damage: 24 } },
   fortify: { id: 'fortify', name: 'Fortify', type: 'Skill', rarity: 'common', cost: 1, block: 11, upgrade: { block: 15 } },
   shieldSlam: { id: 'shield-slam', name: 'Shield Slam', type: 'Attack', rarity: 'common', cost: 1, damage: 8, block: 5, upgrade: { damage: 10, block: 7 } },
   clothesline: { id: 'clothesline', name: 'Clothesline', type: 'Attack', rarity: 'common', cost: 2, damage: 12, weak: 2, upgrade: { damage: 14, weak: 3 } },
@@ -35,7 +35,7 @@ export const cardLibrary = {
   seeingRed: { id: 'seeing-red', name: 'Seeing Red', type: 'Skill', rarity: 'uncommon', cost: 1, energy: 2, exhaust: true, upgrade: { cost: 0 } },
   berserk: { id: 'berserk', name: 'Berserk', type: 'Power', rarity: 'uncommon', cost: 1, strength: 1, energy: 1, upgrade: { cost: 0 } },
   demonForm: { id: 'demon-form', name: 'Demon Form', type: 'Power', rarity: 'rare', cost: 3, strengthPerTurn: 2, upgrade: { strengthPerTurn: 3 } },
-  bludgeon: { id: 'bludgeon', name: 'Bludgeon', type: 'Attack', rarity: 'rare', cost: 3, damage: 32, upgrade: { damage: 42 } },
+  bludgeon: { id: 'bludgeon', name: 'Bludgeon', type: 'Attack', rarity: 'rare', cost: 3, damage: 34, upgrade: { damage: 44 } },
   offering: { id: 'offering', name: 'Offering', type: 'Skill', rarity: 'rare', cost: 0, hpLoss: 6, energy: 2, draw: 3, exhaust: true, upgrade: { draw: 5 } },
 
   // Huntress
@@ -55,10 +55,10 @@ export const cardLibrary = {
   // Arcanist
   emberBolt: { id: 'ember-bolt', name: 'Ember Bolt', type: 'Attack', rarity: 'common', cost: 1, damage: 9, upgrade: { damage: 12 } },
   frostWard: { id: 'frost-ward', name: 'Frost Ward', type: 'Skill', rarity: 'common', cost: 1, block: 9, upgrade: { block: 12 } },
-  meditate: { id: 'meditate', name: 'Meditate', type: 'Power', rarity: 'uncommon', cost: 1, blockPerTurn: 3, upgrade: { blockPerTurn: 4 } },
+  meditate: { id: 'meditate', name: 'Meditate', type: 'Power', rarity: 'uncommon', cost: 1, blockPerTurn: 2, upgrade: { blockPerTurn: 3 } },
   arcShield: { id: 'arc-shield', name: 'Arc Shield', type: 'Skill', rarity: 'uncommon', cost: 1, block: 7, weak: 1, upgrade: { block: 10 } },
   sunLance: { id: 'sun-lance', name: 'Sun Lance', type: 'Attack', rarity: 'uncommon', cost: 2, damage: 15, upgrade: { damage: 20 } },
-  hexingGlance: { id: 'hexing-glance', name: 'Hexing Glance', type: 'Skill', rarity: 'uncommon', cost: 0, weak: 1, upgrade: { weak: 2 } },
+  hexingGlance: { id: 'hexing-glance', name: 'Hexing Glance', type: 'Skill', rarity: 'uncommon', cost: 1, weak: 2, upgrade: { weak: 3 } },
   manaBurst: { id: 'mana-burst', name: 'Mana Burst', type: 'Skill', rarity: 'rare', cost: 0, draw: 2, energy: 1, exhaust: true, upgrade: { draw: 3 } },
   overcharge: { id: 'overcharge', name: 'Overcharge', type: 'Power', rarity: 'rare', cost: 3, energyPerTurn: 1, upgrade: { cost: 2 } },
   starfall: { id: 'starfall', name: 'Starfall', type: 'Attack', rarity: 'rare', cost: 3, damage: 30, upgrade: { damage: 40 } },

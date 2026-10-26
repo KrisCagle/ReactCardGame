@@ -129,7 +129,7 @@ describe('relics', () => {
 
   it('applies pickup effects', () => {
     const run = withRelics(newRun(), 'strawberry', 'old-coin')
-    expect(run.player).toEqual({ maxHp: 87, hp: 87 })
+    expect(run.player).toEqual({ maxHp: ironclad.maxHp + 7, hp: ironclad.maxHp + 7 })
     expect(run.gold).toBe(STARTING_GOLD + 300)
   })
 
