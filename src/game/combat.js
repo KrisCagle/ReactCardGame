@@ -1,0 +1,236 @@
+// Pure combat engine. Every function takes a combat state (plus an rng when it
+// needs randomness) and returns a new state - no React, no mutation of inputs.
+import { enemies } from '../data/gameData'
+import { createCombatCard } from './cards'
+import { pickOne, shuffle } from './rng'
+
+export const HAND_SIZE = 5
+export const MAX_HAND_SIZE = 10
+export const BASE_ENERGY = 3
+export const VULNERABLE_BONUS = 3
+const LOG_LENGTH = 6
+
+const sumOf = (items, key) => items.reduce((total, item) => total + (item[key] ?? 0), 0)
+
+const addLog = (combat, messages) => ({ ...combat, log: [...messages, ...combat.log].slice(0, LOG_LENGTH) })
+
+const scaleMove = (move, nodeType, rowIndex, act) => {
+  const actBoost = Math.max(0, act - 1)
+  const damageScale = nodeType === 'boss' ? 2 + actBoost : nodeType === 'elite' ? 1 + actBoost : actBoost
+
+  return {
+    ...move,
+    damage: move.damage ? move.damage + Math.floor(rowIndex / 2) + damageScale : undefined,
+    block: move.block ? move.block + Math.floor(rowIndex / 3) : undefined,
+    strength: move.strength ? move.strength + Math.floor(rowIndex / 4) : undefined,
+  }
+}
+
+const scaleHp = (baseHp, nodeType, rowIndex, act) => {
+  const actBoost = Math.max(0, act - 1)
+  const hpScale = nodeType === 'boss' ? 14 + actBoost * 8 : nodeType === 'elite' ? 8 + actBoost * 5 : 4 + actBoost * 3
+  return baseHp + hpScale + rowIndex * (nodeType === 'boss' ? 4 : 2)
+}
+
+export const createEnemy = (nodeType, rowIndex, act, rng) => {
+  const template = pickOne(rng, enemies[nodeType] ?? enemies.fight)
+  const maxHp = scaleHp(template.maxHp, nodeType, rowIndex, act)
+
+  return {
+    ...template,
+    maxHp,
+    hp: maxHp,
+    block: 0,
+    strength: 0,
+    vulnerable: 0,
+    moveIndex: 0,
+    moves: template.moves.map((move) => scaleMove(move, nodeType, rowIndex, act)),
+  }
+}
+
+// Draws up to `amount` cards, reshuffling the discard pile into the draw pile
+// when it runs out. Stops (leaving cards in the draw pile) once the hand is full.
+export const drawCards = (combat, amount, rng) => {
+  let drawPile = [...combat.drawPile]
+  let discardPile = [...combat.discardPile]
+  const hand = [...combat.hand]
+  let handWasFull = false
+
+  for (let i = 0; i < amount; i += 1) {
+    if (hand.length >= MAX_HAND_SIZE) {
+      handWasFull = true
+      break
+    }
+    if (drawPile.length === 0) {
+      if (discardPile.length === 0) break
+      drawPile = shuffle(rng, discardPile)
+      discardPile = []
+    }
+    hand.push(drawPile[0])
+    drawPile = drawPile.slice(1)
+  }
+
+  const next = { ...combat, drawPile, discardPile, hand }
+  return handWasFull ? addLog(next, ['Your hand is full.']) : next
+}
+
+// setup: { deck, player: { hp, maxHp }, relics, startingDraw, node, rowIndex, act }
+export const createCombat = (setup, rng) => {
+  const { deck, player, relics = [], startingDraw = 0, node, rowIndex = 0, act = 1 } = setup
+  const cards = shuffle(rng, deck.map((card, index) => createCombatCard(card, `${node.id}-${index}`)))
+
+  const combat = {
+    node,
+    act,
+    player: {
+      hp: player.hp,
+      maxHp: player.maxHp,
+      block: sumOf(relics, 'block'),
+      energy: BASE_ENERGY + sumOf(relics, 'energy'),
+      maxEnergy: BASE_ENERGY,
+      strength: sumOf(relics, 'strength'),
+      blockPerTurn: 0,
+    },
+    enemy: createEnemy(node.type, rowIndex, act, rng),
+    drawPile: cards,
+    hand: [],
+    discardPile: [],
+    // Powers stay in play for the rest of the fight instead of being reshuffled.
+    powerPile: [],
+    turn: 1,
+    log: [`${node.label} blocks the path.`],
+    outcome: 'playing',
+  }
+
+  return drawCards(combat, HAND_SIZE + startingDraw, rng)
+}
+
+export const getEnemyIntent = (combat) => combat.enemy.moves[combat.enemy.moveIndex % combat.enemy.moves.length]
+
+export const describeIntent = (move, strength = 0) => {
+  const parts = []
+  if (move.damage) parts.push(`${move.damage + strength} damage`)
+  if (move.block) parts.push(`${move.block} block`)
+  if (move.strength) parts.push(`+${move.strength} strength`)
+  return parts.join(', ')
+}
+
+export const calculateAttackDamage = (baseDamage, strength, targetVulnerable) =>
+  Math.max(0, baseDamage + strength + (targetVulnerable > 0 ? VULNERABLE_BONUS : 0))
+
+// Block absorbs damage first; returns the updated target and the HP it lost.
+export const applyDamage = (target, amount) => {
+  const blocked = Math.min(target.block, amount)
+  const hpLoss = amount - blocked
+  return { target: { ...target, block: target.block - blocked, hp: Math.max(0, target.hp - hpLoss) }, hpLoss }
+}
+
+export const canPlayCard = (combat, card) => combat.outcome === 'playing' && card.cost <= combat.player.energy
+
+export const playCard = (combat, instanceId, rng) => {
+  const card = combat.hand.find((item) => item.instanceId === instanceId)
+  if (!card || !canPlayCard(combat, card)) return combat
+
+  let player = { ...combat.player, energy: combat.player.energy - card.cost }
+  let enemy = { ...combat.enemy }
+  const messages = []
+
+  if (card.damage) {
+    const hits = card.hits ?? 1
+    let totalLoss = 0
+    for (let i = 0; i < hits && enemy.hp > 0; i += 1) {
+      const result = applyDamage(enemy, calculateAttackDamage(card.damage, player.strength, enemy.vulnerable))
+      enemy = result.target
+      totalLoss += result.hpLoss
+    }
+    messages.push(`${card.name} hits for ${totalLoss}.`)
+  }
+  if (card.vulnerable) {
+    enemy.vulnerable += card.vulnerable
+    messages.push(`${card.name} exposes the enemy.`)
+  }
+  if (card.block) {
+    player.block += card.block
+    messages.push(`${card.name} adds ${card.block} block.`)
+  }
+  if (card.strength) {
+    player.strength += card.strength
+    messages.push(`${card.name} grants ${card.strength} strength.`)
+  }
+  if (card.energy) player.energy += card.energy
+  if (card.heal) {
+    player.hp = Math.min(player.maxHp, player.hp + card.heal)
+    messages.push(`${card.name} restores ${card.heal} HP.`)
+  }
+  if (card.blockPerTurn) {
+    player.blockPerTurn += card.blockPerTurn
+    messages.push(`${card.name} takes hold.`)
+  }
+
+  let next = { ...combat, player, enemy, hand: combat.hand.filter((item) => item.instanceId !== instanceId) }
+
+  // Draw before the played card hits the discard pile, so it can't be reshuffled
+  // and drawn by its own effect.
+  if (card.draw) next = drawCards(next, card.draw, rng)
+
+  next = card.type === 'Power'
+    ? { ...next, powerPile: [...next.powerPile, card] }
+    : { ...next, discardPile: [...next.discardPile, card] }
+
+  if (next.enemy.hp <= 0) {
+    next = { ...next, outcome: 'won' }
+    messages.unshift(`${next.enemy.name} is defeated.`)
+  }
+
+  return addLog(next, messages)
+}
+
+const runEnemyTurn = (combat) => {
+  const move = getEnemyIntent(combat)
+  let enemy = { ...combat.enemy, block: 0 }
+  let player = { ...combat.player }
+  const messages = []
+
+  if (move.block) {
+    enemy.block += move.block
+    messages.push(`${enemy.name} gains ${move.block} block.`)
+  }
+  if (move.strength) {
+    enemy.strength += move.strength
+    messages.push(`${enemy.name} grows stronger.`)
+  }
+  if (move.damage) {
+    const result = applyDamage(player, calculateAttackDamage(move.damage, enemy.strength, 0))
+    player = result.target
+    messages.push(`${enemy.name} uses ${move.intent} for ${result.hpLoss}.`)
+  }
+
+  enemy = { ...enemy, vulnerable: Math.max(0, enemy.vulnerable - 1), moveIndex: enemy.moveIndex + 1 }
+
+  return addLog({ ...combat, player, enemy }, messages)
+}
+
+const startPlayerTurn = (combat, rng) => {
+  const next = {
+    ...combat,
+    turn: combat.turn + 1,
+    player: { ...combat.player, block: combat.player.blockPerTurn, energy: combat.player.maxEnergy },
+  }
+  return drawCards(addLog(next, [`Turn ${next.turn} begins.`]), HAND_SIZE, rng)
+}
+
+export const endTurn = (combat, rng) => {
+  if (combat.outcome !== 'playing') return combat
+
+  const discarded = { ...combat, discardPile: [...combat.discardPile, ...combat.hand], hand: [] }
+  const afterEnemy = runEnemyTurn(discarded)
+
+  if (afterEnemy.player.hp <= 0) {
+    return addLog({ ...afterEnemy, outcome: 'lost' }, ['You fall, but the next climb begins here.'])
+  }
+
+  return startPlayerTurn(afterEnemy, rng)
+}
+
+export const countCombatCards = (combat) =>
+  combat.drawPile.length + combat.hand.length + combat.discardPile.length + combat.powerPile.length

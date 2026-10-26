@@ -14,16 +14,16 @@ export function RewardScreen({ run, onChoose, onSkip }) {
           {run.rewardChoices.map((reward) => (
             <RewardButton
               kind={run.rewardKind}
-              key={`${reward.deckId ?? reward.id}-${run.rewardKind}-${run.rewardTitle}-${reward.name}`}
+              key={reward.id}
               reward={reward}
               onClick={() => onChoose(reward)}
             />
           ))}
         </div>
 
-        {run.rewardKind !== 'relic' && (
-          <button className="secondary-action" onClick={onSkip} type="button">Leave</button>
-        )}
+        <button className="secondary-action" onClick={onSkip} type="button">
+          {run.rewardKind === 'shop' ? 'Leave' : 'Skip'}
+        </button>
       </section>
     </main>
   )
