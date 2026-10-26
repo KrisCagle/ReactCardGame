@@ -719,6 +719,193 @@ button:disabled {
   font-size: 14px;
 }
 
+.run-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+button.turn-pill {
+  min-height: 0;
+  border-radius: 999px;
+}
+
+.turn-pill.gold {
+  color: #ffdd8a;
+}
+
+.map-node.treasure span,
+.legend-icon.treasure {
+  background: #f2a93b;
+}
+
+.map-node.available span {
+  animation: node-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes node-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 221, 138, 0.35);
+  }
+}
+
+.status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-chip {
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: #17120f;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: help;
+}
+
+.status-chip.buff {
+  background: #ffdd8a;
+}
+
+.status-chip.debuff {
+  background: #ff8a62;
+}
+
+.status-chip.poison {
+  background: #9fdc6a;
+}
+
+.card.upgraded strong {
+  color: #1f6b3a;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: rgba(6, 8, 9, 0.72);
+}
+
+.modal-panel {
+  width: min(1100px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgba(245, 241, 232, 0.22);
+  border-radius: 8px;
+  padding: 22px;
+  background: #151b1f;
+}
+
+.modal-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modal-header button {
+  padding-inline: 16px;
+}
+
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.deck-grid .card:disabled {
+  cursor: default;
+  filter: none;
+}
+
+.deck-entry {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.deck-caption {
+  color: #90d4b2;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rest-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.boon-card.smith span {
+  background: #ffdd8a;
+}
+
+.shop-panel {
+  width: min(1180px, 100%);
+}
+
+.shop-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.shop-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.shop-item {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.relic-card.service span {
+  background: #d8e7e3;
+}
+
+.price {
+  justify-self: center;
+  color: #ffdd8a;
+  font-weight: 900;
+}
+
+.price.too-expensive {
+  color: #ff8a62;
+}
+
+.price.sold {
+  color: #8d877b;
+}
+
+@media (max-width: 860px) {
+  .rest-options,
+  .shop-row {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .run-stats {
+    justify-content: flex-start;
+  }
+}
+
   @media (max-width: 860px) {
   .game-shell {
     grid-template-rows: auto auto auto;

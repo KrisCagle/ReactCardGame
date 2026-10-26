@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { cardLibrary } from '../data/gameData'
 import {
   MAX_HAND_SIZE,
-  VULNERABLE_BONUS,
   calculateAttackDamage,
+  calculateBlock,
+  describeIntent,
   countCombatCards,
   createCombat,
   drawCards,
@@ -73,14 +74,30 @@ describe('drawCards', () => {
 })
 
 describe('calculateAttackDamage', () => {
-  it('adds strength and the vulnerable bonus', () => {
-    expect(calculateAttackDamage(6, 0, 0)).toBe(6)
-    expect(calculateAttackDamage(6, 2, 0)).toBe(8)
-    expect(calculateAttackDamage(6, 2, 1)).toBe(8 + VULNERABLE_BONUS)
+  const plain = { strength: 0, weak: 0, vulnerable: 0 }
+
+  it('adds strength', () => {
+    expect(calculateAttackDamage(6, plain, plain)).toBe(6)
+    expect(calculateAttackDamage(6, { ...plain, strength: 2 }, plain)).toBe(8)
+  })
+
+  it('applies vulnerable (+50%) and weak (-25%), rounding down', () => {
+    expect(calculateAttackDamage(6, plain, { ...plain, vulnerable: 1 })).toBe(9)
+    expect(calculateAttackDamage(7, plain, { ...plain, vulnerable: 1 })).toBe(10)
+    expect(calculateAttackDamage(10, { ...plain, weak: 1 }, plain)).toBe(7)
+    expect(calculateAttackDamage(10, { ...plain, strength: 2, weak: 1 }, { ...plain, vulnerable: 2 })).toBe(13)
   })
 
   it('never goes below zero', () => {
-    expect(calculateAttackDamage(3, -5, 0)).toBe(0)
+    expect(calculateAttackDamage(3, { ...plain, strength: -5 }, plain)).toBe(0)
+  })
+})
+
+describe('calculateBlock', () => {
+  it('reduces block from cards by 25% while frail', () => {
+    expect(calculateBlock(8, { frail: 0 })).toBe(8)
+    expect(calculateBlock(8, { frail: 1 })).toBe(6)
+    expect(calculateBlock(5, { frail: 2 })).toBe(3)
   })
 })
 
@@ -109,10 +126,22 @@ describe('playCard', () => {
   it('applies vulnerable after the hit, so it boosts later attacks only', () => {
     const combat = withHand(makeCombat(strikes(5), { enemy: { hp: 60 } }), [cardLibrary.bash, cardLibrary.strike])
     const afterBash = playCard(combat, combat.hand[0].instanceId, createRng(4))
-    expect(afterBash.enemy.hp).toBe(60 - 9)
-    expect(afterBash.enemy.vulnerable).toBe(1)
+    expect(afterBash.enemy.hp).toBe(60 - 8)
+    expect(afterBash.enemy.vulnerable).toBe(2)
     const afterStrike = playCard(afterBash, afterBash.hand[0].instanceId, createRng(4))
-    expect(afterStrike.enemy.hp).toBe(60 - 9 - (6 + VULNERABLE_BONUS))
+    expect(afterStrike.enemy.hp).toBe(60 - 8 - 9)
+  })
+
+  it('applies weak and poison to the enemy', () => {
+    const combat = withHand(makeCombat(strikes(5)), [cardLibrary.clothesline, cardLibrary.deadlyPoison])
+    const afterLine = playCard(combat, combat.hand[0].instanceId, createRng(4))
+    const afterPoison = playCard(afterLine, afterLine.hand[0].instanceId, createRng(4))
+    expect(afterPoison.enemy).toMatchObject({ weak: 2, poison: 5 })
+  })
+
+  it('gains less block while frail', () => {
+    const combat = withHand(makeCombat(strikes(5), { player: { frail: 1 } }), [cardLibrary.guard])
+    expect(playCard(combat, combat.hand[0].instanceId, createRng(4)).player.block).toBe(3)
   })
 
   it('cannot redraw itself with its own draw effect', () => {
@@ -174,11 +203,46 @@ describe('endTurn', () => {
     expect(endTurn(combat, createRng(5)).player.block).toBe(3)
   })
 
+  it('poisons the enemy at the start of its turn, ignoring block, then reduces poison', () => {
+    const combat = makeCombat(strikes(10), { enemy: { hp: 30, block: 10, poison: 4, moves: [attackMove] } })
+    const next = endTurn(combat, createRng(5))
+    expect(next.enemy.hp).toBe(26)
+    expect(next.enemy.poison).toBe(3)
+  })
+
+  it('wins the fight when poison finishes the enemy, before it can act', () => {
+    const combat = makeCombat(strikes(10), { enemy: { hp: 3, poison: 5, moves: [attackMove] } })
+    const next = endTurn(combat, createRng(5))
+    expect(next.outcome).toBe('won')
+    expect(next.player.hp).toBe(50)
+  })
+
+  it('lets enemies apply debuffs that last through the player\'s next turn', () => {
+    const lick = { intent: 'Lick', weak: 1, frail: 1 }
+    const afterEnemy = endTurn(makeCombat(strikes(10), { enemy: { moves: [lick, attackMove] } }), createRng(5))
+    expect(afterEnemy.player).toMatchObject({ weak: 1, frail: 1 })
+    // They wear off at the end of the player's turn.
+    expect(endTurn(afterEnemy, createRng(6)).player).toMatchObject({ weak: 0, frail: 0 })
+  })
+
+  it('makes weakened enemies hit softer', () => {
+    const combat = makeCombat(strikes(10), { enemy: { weak: 1, moves: [attackMove] } })
+    expect(endTurn(combat, createRng(5)).player.hp).toBe(50 - 7)
+  })
+
   it('marks the fight lost when the player drops to 0 HP', () => {
     const combat = makeCombat(strikes(10), { player: { hp: 5 }, enemy: { moves: [attackMove] } })
     const next = endTurn(combat, createRng(5))
     expect(next.player.hp).toBe(0)
     expect(next.outcome).toBe('lost')
     expect(endTurn(next, createRng(5))).toBe(next)
+  })
+})
+
+describe('describeIntent', () => {
+  it('shows the damage the player would actually take, plus debuffs', () => {
+    const enemy = { strength: 2, weak: 0, vulnerable: 0 }
+    const player = { strength: 0, weak: 0, vulnerable: 1 }
+    expect(describeIntent({ damage: 10, vulnerable: 2 }, enemy, player)).toBe('18 damage, 2 vulnerable')
   })
 })

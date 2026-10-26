@@ -7,6 +7,8 @@ import { MapScreen } from './components/MapScreen'
 import { RewardScreen } from './components/RewardScreen'
 import { CombatScreen } from './components/CombatScreen'
 import { VictoryScreen } from './components/VictoryScreen'
+import { RestScreen } from './components/RestScreen'
+import { ShopScreen } from './components/ShopScreen'
 
 function App() {
   const [{ run, combat }, dispatch] = useReducer(gameReducer, undefined, () => createInitialGameState())
@@ -19,7 +21,27 @@ function App() {
     return <OpeningBoonScreen run={run} onChoose={(boon) => dispatch({ type: 'chooseOpeningBoon', boon })} />
   }
   if (run.screen === 'map') {
-    return <MapScreen run={run} onPickNode={(node) => dispatch({ type: 'enterNode', node })} onRestart={restart} />
+    return <MapScreen run={run} onPickNode={(nodeId) => dispatch({ type: 'enterNode', nodeId })} onRestart={restart} />
+  }
+  if (run.screen === 'rest') {
+    return (
+      <RestScreen
+        run={run}
+        onRest={() => dispatch({ type: 'restHeal' })}
+        onSmith={(deckId) => dispatch({ type: 'smithCard', deckId })}
+      />
+    )
+  }
+  if (run.screen === 'shop') {
+    return (
+      <ShopScreen
+        run={run}
+        onBuyCard={(index) => dispatch({ type: 'buyShopCard', index })}
+        onBuyRelic={(index) => dispatch({ type: 'buyShopRelic', index })}
+        onRemoveCard={(deckId) => dispatch({ type: 'removeCard', deckId })}
+        onLeave={() => dispatch({ type: 'leaveShop' })}
+      />
+    )
   }
   if (run.screen === 'reward') {
     return (
