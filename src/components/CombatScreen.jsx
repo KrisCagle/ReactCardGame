@@ -1,7 +1,8 @@
-import { describeIntent } from '../game/runState'
+import { canPlayCard, describeIntent, getEnemyIntent } from '../game/combat'
 import { CardButton, HealthBar, Stat } from './shared'
 
-export function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onRestart, run }) {
+export function CombatScreen({ combat, onEndTurn, onPlayCard, onRestart, run }) {
+  const enemyMove = getEnemyIntent(combat)
   const healthPercent = Math.round((combat.player.hp / combat.player.maxHp) * 100)
   const enemyPercent = Math.round((combat.enemy.hp / combat.enemy.maxHp) * 100)
 
@@ -25,6 +26,9 @@ export function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onResta
               <h2>{run.character.name}</h2>
               <HealthBar value={combat.player.hp} max={combat.player.maxHp} percent={healthPercent} />
               <p>Block {combat.player.block} - Strength {combat.player.strength} - Energy {combat.player.energy}/{combat.player.maxEnergy}</p>
+              {combat.powerPile.length > 0 && (
+                <p className="powers">Powers: {combat.powerPile.map((card) => card.name).join(', ')}</p>
+              )}
             </div>
           </article>
 
@@ -62,7 +66,7 @@ export function CombatScreen({ combat, enemyMove, onEndTurn, onPlayCard, onResta
           {combat.hand.map((card) => (
             <CardButton
               card={card}
-              disabled={card.cost > combat.player.energy || combat.outcome !== 'playing'}
+              disabled={!canPlayCard(combat, card)}
               key={card.instanceId}
               onClick={() => onPlayCard(card)}
             />

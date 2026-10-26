@@ -1,6 +1,10 @@
+export const ACT_COUNT = 3
+
+// Card text is generated from these effect fields (see describeCard in game/cards.js),
+// so the description can never drift from what the card actually does.
 export const cardLibrary = {
-  strike: { id: 'strike', name: 'Strike', type: 'Attack', cost: 1, damage: 6, text: 'Deal 6 damage.' },
-  guard: { id: 'guard', name: 'Guard', type: 'Skill', cost: 1, block: 5, text: 'Gain 5 block.' },
+  strike: { id: 'strike', name: 'Strike', type: 'Attack', cost: 1, damage: 6 },
+  guard: { id: 'guard', name: 'Guard', type: 'Skill', cost: 1, block: 5 },
   bash: {
     id: 'bash',
     name: 'Bash',
@@ -8,18 +12,16 @@ export const cardLibrary = {
     cost: 2,
     damage: 9,
     vulnerable: 1,
-    text: 'Deal 9 damage. Apply 1 vulnerable.',
   },
   focus: {
     id: 'focus',
     name: 'Focus',
-    type: 'Power',
+    type: 'Skill',
     cost: 0,
     draw: 1,
     energy: 1,
-    text: 'Gain 1 energy. Draw 1 card.',
   },
-  cleave: { id: 'cleave', name: 'Cleave', type: 'Attack', cost: 1, damage: 8, text: 'Deal 8 damage.' },
+  cleave: { id: 'cleave', name: 'Cleave', type: 'Attack', cost: 1, damage: 8 },
   shrug: {
     id: 'shrug',
     name: 'Shrug It Off',
@@ -27,7 +29,6 @@ export const cardLibrary = {
     cost: 1,
     block: 8,
     draw: 1,
-    text: 'Gain 8 block. Draw 1 card.',
   },
   pommel: {
     id: 'pommel',
@@ -36,9 +37,8 @@ export const cardLibrary = {
     cost: 1,
     damage: 7,
     draw: 1,
-    text: 'Deal 7 damage. Draw 1 card.',
   },
-  charge: { id: 'charge', name: 'Battle Trance', type: 'Skill', cost: 0, draw: 2, text: 'Draw 2 cards.' },
+  charge: { id: 'charge', name: 'Battle Trance', type: 'Skill', cost: 0, draw: 2 },
   ironWave: {
     id: 'iron-wave',
     name: 'Iron Wave',
@@ -46,10 +46,9 @@ export const cardLibrary = {
     cost: 1,
     damage: 5,
     block: 5,
-    text: 'Deal 5 damage. Gain 5 block.',
   },
-  twinStrike: { id: 'twin-strike', name: 'Twin Strike', type: 'Attack', cost: 1, damage: 10, text: 'Deal 10 damage.' },
-  inflame: { id: 'inflame', name: 'Inflame', type: 'Power', cost: 1, strength: 2, text: 'Gain 2 strength.' },
+  twinStrike: { id: 'twin-strike', name: 'Twin Strike', type: 'Attack', cost: 1, damage: 5, hits: 2 },
+  inflame: { id: 'inflame', name: 'Inflame', type: 'Power', cost: 1, strength: 2 },
   recover: {
     id: 'recover',
     name: 'Second Wind',
@@ -57,7 +56,6 @@ export const cardLibrary = {
     cost: 1,
     block: 9,
     heal: 2,
-    text: 'Gain 9 block. Heal 2 HP.',
   },
   chargeUp: {
     id: 'charge-up',
@@ -66,7 +64,6 @@ export const cardLibrary = {
     cost: 1,
     block: 6,
     energy: 1,
-    text: 'Gain 6 block. Gain 1 energy.',
   },
   uppercut: {
     id: 'uppercut',
@@ -75,7 +72,6 @@ export const cardLibrary = {
     cost: 2,
     damage: 12,
     vulnerable: 2,
-    text: 'Deal 12 damage. Apply 2 vulnerable.',
   },
   bloodForBlood: {
     id: 'blood-for-blood',
@@ -83,7 +79,6 @@ export const cardLibrary = {
     type: 'Attack',
     cost: 3,
     damage: 18,
-    text: 'Deal 18 damage.',
   },
   warcry: {
     id: 'warcry',
@@ -92,7 +87,6 @@ export const cardLibrary = {
     cost: 0,
     draw: 2,
     block: 3,
-    text: 'Draw 2 cards. Gain 3 block.',
   },
   heavyBlade: {
     id: 'heavy-blade',
@@ -100,7 +94,6 @@ export const cardLibrary = {
     type: 'Attack',
     cost: 2,
     damage: 14,
-    text: 'Deal 14 damage.',
   },
   quickstep: {
     id: 'quickstep',
@@ -109,7 +102,6 @@ export const cardLibrary = {
     cost: 0,
     block: 4,
     draw: 1,
-    text: 'Gain 4 block. Draw 1 card.',
   },
   aimedShot: {
     id: 'aimed-shot',
@@ -118,7 +110,6 @@ export const cardLibrary = {
     cost: 1,
     damage: 8,
     vulnerable: 1,
-    text: 'Deal 8 damage. Apply 1 vulnerable.',
   },
   volley: {
     id: 'volley',
@@ -127,11 +118,10 @@ export const cardLibrary = {
     cost: 1,
     damage: 9,
     draw: 1,
-    text: 'Deal 9 damage. Draw 1 card.',
   },
-  meditate: { id: 'meditate', name: 'Meditate', type: 'Power', cost: 1, block: 6, text: 'Gain 6 block.' },
-  emberBolt: { id: 'ember-bolt', name: 'Ember Bolt', type: 'Attack', cost: 1, damage: 11, text: 'Deal 11 damage.' },
-  fortify: { id: 'fortify', name: 'Fortify', type: 'Skill', cost: 1, block: 11, text: 'Gain 11 block.' },
+  meditate: { id: 'meditate', name: 'Meditate', type: 'Power', cost: 1, blockPerTurn: 3 },
+  emberBolt: { id: 'ember-bolt', name: 'Ember Bolt', type: 'Attack', cost: 1, damage: 11 },
+  fortify: { id: 'fortify', name: 'Fortify', type: 'Skill', cost: 1, block: 11 },
   battleRhythm: {
     id: 'battle-rhythm',
     name: 'Battle Rhythm',
@@ -139,9 +129,8 @@ export const cardLibrary = {
     cost: 1,
     draw: 2,
     block: 4,
-    text: 'Draw 2 cards. Gain 4 block.',
   },
-  berserk: { id: 'berserk', name: 'Berserk', type: 'Power', cost: 1, strength: 1, energy: 1, text: 'Gain 1 strength. Gain 1 energy.' },
+  berserk: { id: 'berserk', name: 'Berserk', type: 'Power', cost: 1, strength: 1, energy: 1 },
   shieldSlam: {
     id: 'shield-slam',
     name: 'Shield Slam',
@@ -149,9 +138,8 @@ export const cardLibrary = {
     cost: 1,
     damage: 7,
     block: 4,
-    text: 'Deal 7 damage. Gain 4 block.',
   },
-  smokeVeil: { id: 'smoke-veil', name: 'Smoke Veil', type: 'Skill', cost: 0, block: 7, text: 'Gain 7 block.' },
+  smokeVeil: { id: 'smoke-veil', name: 'Smoke Veil', type: 'Skill', cost: 0, block: 7 },
   pinningShot: {
     id: 'pinning-shot',
     name: 'Pinning Shot',
@@ -159,7 +147,6 @@ export const cardLibrary = {
     cost: 1,
     damage: 6,
     vulnerable: 2,
-    text: 'Deal 6 damage. Apply 2 vulnerable.',
   },
   ricochet: {
     id: 'ricochet',
@@ -168,7 +155,6 @@ export const cardLibrary = {
     cost: 1,
     damage: 7,
     draw: 1,
-    text: 'Deal 7 damage. Draw 1 card.',
   },
   quickPlan: {
     id: 'quick-plan',
@@ -176,7 +162,6 @@ export const cardLibrary = {
     type: 'Skill',
     cost: 0,
     draw: 2,
-    text: 'Draw 2 cards.',
   },
   arcShield: {
     id: 'arc-shield',
@@ -185,16 +170,14 @@ export const cardLibrary = {
     cost: 1,
     block: 10,
     energy: 1,
-    text: 'Gain 10 block. Gain 1 energy.',
   },
   manaBurst: {
     id: 'mana-burst',
     name: 'Mana Burst',
-    type: 'Power',
+    type: 'Skill',
     cost: 0,
     draw: 2,
     energy: 1,
-    text: 'Draw 2 cards. Gain 1 energy.',
   },
   sunLance: {
     id: 'sun-lance',
@@ -202,7 +185,6 @@ export const cardLibrary = {
     type: 'Attack',
     cost: 2,
     damage: 15,
-    text: 'Deal 15 damage.',
   },
   frostWard: {
     id: 'frost-ward',
@@ -210,7 +192,6 @@ export const cardLibrary = {
     type: 'Skill',
     cost: 1,
     block: 12,
-    text: 'Gain 12 block.',
   },
 }
 
@@ -242,8 +223,6 @@ export const rewardPool = [
   cardLibrary.arcShield,
   cardLibrary.manaBurst,
   cardLibrary.frostWard,
-  cardLibrary.guard,
-  cardLibrary.strike,
 ]
 
 export const characterRewardPools = {

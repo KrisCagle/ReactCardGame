@@ -552,6 +552,23 @@ h2 {
   line-height: 1.4;
 }
 
+.victory-stats {
+  display: grid;
+  gap: 10px;
+  color: #ddd3bf;
+  font-weight: 700;
+}
+
+.victory-stats strong {
+  color: #ffdd8a;
+  font-size: 22px;
+}
+
+.combatant-copy > p.powers {
+  color: #b9d4ea;
+  font-size: 14px;
+}
+
 .secondary-action {
   width: fit-content;
   justify-self: center;

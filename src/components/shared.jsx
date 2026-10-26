@@ -1,10 +1,12 @@
+import { describeCard } from '../game/cards'
+
 export function CardButton({ card, disabled = false, onClick }) {
   return (
     <button className={`card ${card.type.toLowerCase()}`} disabled={disabled} onClick={onClick} type="button">
       <span className="cost">{card.cost}</span>
       <strong>{card.name}</strong>
       <small>{card.type}</small>
-      <p>{card.text}</p>
+      <p>{describeCard(card)}</p>
     </button>
   )
 }
