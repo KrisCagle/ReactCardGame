@@ -1,17 +1,20 @@
 # React Card Game
 
-A browser-based roguelike deckbuilder prototype inspired by games like Slay the Spire. The project is built with React and Vite, with the current focus on getting a playable combat and map loop working before expanding into deeper card, relic, enemy, and event systems.
+A browser-based roguelike deckbuilder inspired by Slay the Spire, built with React and Vite. Pick a character, climb three procedurally generated acts, build a deck, collect relics, and beat the final boss.
 
 ## Current Features
 
-- Three characters with their own starter decks, passives, and card pools
+- Three characters with their own starter decks, passives, and card pools (common / uncommon / rare)
 - A freshly generated branching map every act, with fights, elites, mystery rooms, shops, campfires, treasure, and a boss
-- Three acts; beat the final boss to win the run
-- Turn-based combat with energy, block, enemy intents, draw pile, hand, and discard pile
+- Act-specific enemy pools (easier fights first), elites, and two possible bosses per act
+- Enemies with multi-hit attacks, random or scripted move patterns, and passives (thorns, enrage, metallicize, ritual)
+- Turn-based combat with energy, block, enemy intents, and draw / discard / exhaust piles
 - Status effects: strength, vulnerable, weak, frail, and poison
+- 34 relics: stat relics, triggered relics (every 3 attacks, start of turn, end of turn...), and boss relics with drawbacks
+- Potions (3 slots) from fights, shops, and events
+- Choice-based mystery events with costs, gambles, card removal, upgrades, and transforms
 - Card upgrades at campfires (or rest to heal 30% HP)
-- Gold from fights and treasure, spent at shops on cards, relics, and card removal
-- Card rewards after fights, relic rewards from elites, bosses, treasure, and some mystery rooms
+- Gold from fights and treasure, spent at shops on cards, relics, potions, and card removal
 
 ## Tech Stack
 
@@ -19,6 +22,8 @@ A browser-based roguelike deckbuilder prototype inspired by games like Slay the 
 - Vite
 - JavaScript
 - CSS
+- Vitest
+- GitHub Actions (lint, test, build on every PR)
 
 ## Getting Started
 
@@ -52,37 +57,41 @@ Run the tests (Vitest):
 npm test
 ```
 
+Run the balance simulator (bot-played runs per character; add `--cards` for card/relic impact):
+
+```bash
+npm run sim -- 500
+```
+
 ## Architecture
 
 Game rules live in `src/game/` as pure functions with no React in them, so they can be unit tested and simulated:
 
-- `combat.js` - drawing, playing cards, damage, enemy turns
-- `runState.js` - building a run, rewards, gold, shops, campfires, map progress, acts
+- `combat.js` - drawing, playing cards, damage, statuses, enemy turns, potions
+- `relics.js` - triggered relic logic, keyed by relic id (relics themselves are plain data)
+- `runState.js` - building a run, gold, relics, rewards, shops, campfires, map progress, acts
+- `rewards.js` - card / relic rarity rolls and potion drops
+- `events.js` - mystery rooms and choice-based events
 - `mapGen.js` - procedural act maps (non-crossing paths plus room placement rules)
 - `gameReducer.js` - the single `useReducer` entry point the UI dispatches actions to
 - `rng.js` - seeded random numbers; the seed lives in game state, so every transition is pure and runs are reproducible
-- `cards.js` - card text generated from card effects
+- `cards.js` - card text generated from card effects, and upgrades
+- `bot.js` - a heuristic auto-player used by the fuzz tests and the simulator
 
-Components in `src/components/` only render state and dispatch actions.
+Static content lives in `src/data/` (cards, characters, enemies, relics, potions, events). Components in `src/components/` only render state and dispatch actions.
 
 ## Gameplay Loop
 
-1. Pick a starting node on the map.
-2. Fight enemies using cards from your hand.
+1. Choose a character and an opening boon.
+2. Pick a room on the map and fight, shop, rest, or face an event.
 3. Spend energy to attack, block, draw cards, or apply effects.
-4. Win combat to choose a reward.
-5. Return to the map and choose the next connected room.
-6. Climb toward the boss at the top of the act.
-7. Beat the boss of all three acts to win the run.
+4. Win combat to collect gold, a card, and sometimes a relic or potion.
+5. Climb toward the boss at the top of the act.
+6. Beat the boss of all three acts to win the run.
 
 ## Roadmap
 
-- Add more enemy types and better enemy move patterns
-- Expand card effects and card rarity
-- Add more relics that trigger on events
-- Add choice-based mystery events
-- Add animations, hit feedback, and improved card movement
-
-## Project Status
-
-This is an early playable prototype. The priority is to build the core systems in small, testable pieces and keep the game fun to click through while the design takes shape.
+- Visual overhaul: character and enemy art, animations, hit feedback, tooltips
+- Fights against multiple enemies at once
+- Save and resume runs
+- More balance passes using the simulator

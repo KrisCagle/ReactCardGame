@@ -891,6 +891,197 @@ button.turn-pill {
   color: #8d877b;
 }
 
+.run-header {
+  display: grid;
+  gap: 10px;
+}
+
+.run-header .run-stats {
+  justify-content: flex-start;
+}
+
+.relic-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.relic-chip {
+  border: 1px solid rgba(255, 221, 138, 0.4);
+  border-radius: 6px;
+  padding: 4px 9px;
+  background: rgba(12, 16, 18, 0.72);
+  color: #f5f1e8;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: help;
+}
+
+.relic-chip.rarity-uncommon {
+  border-color: #7fb4e0;
+}
+
+.relic-chip.rarity-rare {
+  border-color: #ffdd8a;
+  color: #ffdd8a;
+}
+
+.relic-chip.rarity-boss {
+  border-color: #f05b4e;
+  color: #ffb3aa;
+}
+
+.potion-belt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.potion-slot {
+  min-height: 34px;
+  display: flex;
+  align-items: stretch;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.potion-slot.empty {
+  align-items: center;
+  padding: 0 14px;
+  border: 1px dashed rgba(245, 241, 232, 0.25);
+  color: rgba(245, 241, 232, 0.4);
+}
+
+.potion-slot button {
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.potion-use {
+  border-radius: 999px 0 0 999px;
+  padding: 0 12px;
+  background: #3c5a7a;
+}
+
+.potion-slot .potion-use:only-child {
+  border-radius: 999px;
+}
+
+.potion-use:disabled {
+  opacity: 1;
+  cursor: help;
+}
+
+.potion-discard {
+  border-radius: 0 999px 999px 0;
+  padding: 0 10px;
+}
+
+.combat-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.status-chip.passive {
+  background: #b9d4ea;
+}
+
+.card.rarity-uncommon {
+  border-color: #7fb4e0;
+}
+
+.card.rarity-rare {
+  border-color: #ffdd8a;
+  box-shadow: 0 0 0 1px #ffdd8a, 0 14px 24px rgba(0, 0, 0, 0.34);
+}
+
+.card small {
+  text-transform: capitalize;
+}
+
+.card.curse {
+  background: linear-gradient(180deg, #4b3d55, #2a2130);
+  color: #e8dcef;
+}
+
+.card.curse p,
+.card.curse small {
+  color: #cdb9da;
+}
+
+.reward-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reward-item {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.reward-item span {
+  color: #ddd3bf;
+  font-weight: 600;
+}
+
+.reward-item.relic,
+.reward-item.relicChoice {
+  border-color: rgba(255, 221, 138, 0.5);
+}
+
+.reward-item.potion {
+  border-color: rgba(127, 180, 224, 0.5);
+}
+
+.event-choices {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-choice {
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.event-choice strong {
+  color: #ffdd8a;
+}
+
+.event-choice span {
+  color: #ddd3bf;
+  font-weight: 600;
+}
+
+.event-result {
+  display: grid;
+  gap: 16px;
+  color: #f5f1e8;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.potion-offer span {
+  background: #7fb4e0;
+}
+
 @media (max-width: 860px) {
   .rest-options,
   .shop-row {

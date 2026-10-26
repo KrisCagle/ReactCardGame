@@ -26,4 +26,9 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // The balance simulator runs in Node, not the browser.
+    files: ['sim/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

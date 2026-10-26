@@ -4,7 +4,7 @@
 // 2. Keep only the grid cells a path touched, then assign room types with
 //    placement rules (no early elites, campfire before the boss, no
 //    back-to-back specials).
-import { pickOne, randomInt } from './rng'
+import { pickOne, randomInt } from './rng.js'
 
 export const MAP_FLOORS = 15
 export const MAP_COLUMNS = 7
